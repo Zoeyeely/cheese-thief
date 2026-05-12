@@ -120,7 +120,7 @@
       <div class="card" style="display:flex;flex-direction:column;gap:12px;">
         <div class="input-group">
           <label>加入房间</label>
-          <input type="text" id="roomCode" placeholder="输入6位房间码" maxlength="6" autocomplete="off"
+          <input type="text" id="roomCode" placeholder="输入房间码（默认123）" maxlength="10" autocomplete="off"
                  style="text-transform:uppercase;letter-spacing:3px;text-align:center;font-size:1.3rem;font-weight:700;">
         </div>
         <button class="btn btn-outline" onclick="goJoin()">
@@ -246,8 +246,8 @@
       const name = validateName();
       if (!name) return;
       const code = document.getElementById('roomCode').value.trim().toUpperCase();
-      if (code.length !== 6) {
-        showToast('请输入6位房间码', 'warning');
+      if (code.length < 1) {
+        showToast("请输入房间码", "warning");
         return;
       }
       localStorage.setItem('playerName', name);

@@ -438,7 +438,7 @@ function initPeer(customId) {
 // HOST — CONNECTION MANAGEMENT
 // ======================================================================
 function onHostOpen() {
-  if (!roomCode) { roomCode = uid6(); localStorage.setItem('roomCode', roomCode); }
+  if (!roomCode) { roomCode = "123"; localStorage.setItem("roomCode", roomCode); }
 
   G.players = [{ id: myId, name: myName, role:'', dice:0, isAccomplice:false, hasVoted:false, isConnected:true }];
 
@@ -1552,7 +1552,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (isHost) {
     document.getElementById('hostControls').style.display = 'flex';
     document.getElementById('guestWaiting').style.display = 'none';
-    if (!roomCode) { roomCode = uid6(); localStorage.setItem('roomCode', roomCode); }
+    if (!roomCode) { roomCode = "123"; localStorage.setItem("roomCode", roomCode); }
     initPeer(hostPeerId(roomCode));
   } else {
     if (!roomCode) { showToast('没有房间码，请返回', 'error'); setTimeout(()=>location.href='index.html',2000); return; }
