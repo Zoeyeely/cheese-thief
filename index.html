@@ -260,6 +260,45 @@
     const saved = localStorage.getItem('playerName');
     if (saved) document.getElementById('playerName').value = saved;
 
+    // Check for unfinished game
+    (function() {
+      const savedState = localStorage.getItem('gameState');
+      if (!savedState) return;
+      try {
+        const gs = JSON.parse(savedState);
+        if (!gs || !gs.phase) return;
+        if (gs.phase === 'waiting' || gs.phase === 'result') {
+          localStorage.removeItem('gameState');
+          return;
+        }
+        const savedRoom = localStorage.getItem('roomCode') || '?';
+        // Show resume banner
+        const banner = document.createElement('div');
+        banner.id = 'resumeBanner';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(20,20,30,0.97);border-bottom:2px solid var(--night-accent);padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;';
+        banner.innerHTML =
+          '<div style="font-size:1rem;font-weight:700;color:var(--night-accent);">🔄 检测到未完成的游戏</div>' +
+          '<div style="font-size:0.88rem;color:#ccc;">房间码: <strong>' + savedRoom + '</strong></div>' +
+          '<div style="display:flex;gap:10px;">' +
+          '<button id="resumeBtn" class="btn btn-primary" style="min-width:100px;">继续游戏</button>' +
+          '<button id="ignoreSavedBtn" class="btn btn-muted" style="min-width:80px;">忽略</button>' +
+          '</div>';
+        document.body.appendChild(banner);
+        document.getElementById('resumeBtn').addEventListener('click', function() {
+          // Auto-fill room code and navigate
+          const roomInput = document.getElementById('roomCode');
+          if (roomInput) roomInput.value = savedRoom;
+          window.location.href = 'game.html';
+        });
+        document.getElementById('ignoreSavedBtn').addEventListener('click', function() {
+          localStorage.removeItem('gameState');
+          banner.remove();
+        });
+      } catch(e) {
+        localStorage.removeItem('gameState');
+      }
+    })();
+
     // Enter key support
     document.getElementById('roomCode').addEventListener('keydown', e => {
       if (e.key === 'Enter') goJoin();

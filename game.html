@@ -11,10 +11,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-  <!-- Toast -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Night Overlay (shown to all players at night) -->
   <div class="night-overlay hidden" id="nightOverlay">
     <div class="night-stars">✦ ✦ ✦ ✦ ✦</div>
     <div class="night-message" id="nightMsg">闭上眼睛…</div>
@@ -29,14 +27,11 @@
   </div>
 
   <div class="container">
-
-    <!-- ==================== LOBBY ==================== -->
     <div id="page-lobby" class="page active">
       <div class="status-bar">
         <div class="status-dot connecting" id="connDot"></div>
         <span id="connStatus">连接中…</span>
       </div>
-
       <div class="card room-code-display">
         <div style="font-size:0.8rem;color:var(--night-muted);margin-bottom:4px;">房间码</div>
         <div class="room-code" id="lobbyRoomCode">------</div>
@@ -46,7 +41,6 @@
         </div>
         <div id="qrContainer" class="qr-wrapper hidden"></div>
       </div>
-
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <h3>玩家列表</h3>
@@ -54,47 +48,38 @@
         </div>
         <div class="player-list" id="lobbyPlayerList"></div>
       </div>
-
       <div id="hostControls" style="display:none;flex-direction:column;gap:10px;">
         <div class="card" style="display:flex;flex-direction:column;gap:10px;">
           <h3>⚙️ 游戏设置</h3>
           <div class="info-row">
             <span class="info-label">讨论时间（秒）</span>
-            <input type="number" id="discussionTime" value="300" min="60" max="600"
-              style="width:80px;text-align:center;">
+            <input type="number" id="discussionTime" value="300" min="60" max="600" style="width:80px;text-align:center;">
           </div>
         </div>
         <button class="btn btn-primary" id="startBtn" onclick="hostStartGame()">🎮 开始游戏</button>
         <p id="startHint" class="text-center font-sm text-muted"></p>
       </div>
-
       <div id="guestWaiting" style="display:none;">
         <div class="card text-center" style="gap:12px;display:flex;flex-direction:column;align-items:center;">
           <div class="spinner"></div>
           <p class="text-muted">等待房主开始游戏…</p>
         </div>
       </div>
-
       <button class="btn btn-muted" onclick="leaveGame()" style="margin-top:auto;">🚪 离开房间</button>
     </div>
 
-    <!-- ==================== DEALING ==================== -->
     <div id="page-dealing" class="page">
       <div class="phase-header">
         <span class="phase-header-icon">🃏</span>
         <span class="phase-header-text">查看身份 &amp; 摇骰子</span>
       </div>
-
       <div class="card text-center" style="gap:6px;">
         <p class="text-muted font-sm">点击卡牌查看身份，5秒后自动盖回</p>
         <p style="font-size:0.82rem;color:#f87171;">⚠️ 注意不要让他人看到！</p>
       </div>
-
       <div class="identity-section" onclick="flipIdentityCard()">
         <div class="identity-card" id="identityCard">
-          <div class="card-front">
-            <div class="card-front-text">点击查看身份</div>
-          </div>
+          <div class="card-front"><div class="card-front-text">点击查看身份</div></div>
           <div class="card-back" id="cardBack">
             <div class="card-role-emoji" id="cardRoleEmoji">❓</div>
             <div class="card-role-name" id="cardRoleName">-</div>
@@ -102,7 +87,6 @@
           </div>
         </div>
       </div>
-
       <div class="card" id="diceSection">
         <h3 style="margin-bottom:12px;text-align:center;">🎲 摇骰子</h3>
         <p class="text-muted font-sm text-center" style="margin-bottom:16px;">点数只有你自己可见</p>
@@ -120,7 +104,6 @@
           </div>
         </div>
       </div>
-
       <div id="dealingHostControls" style="display:none;flex-direction:column;gap:8px;">
         <div class="card">
           <h3 style="margin-bottom:10px;">玩家摇骰状态</h3>
@@ -129,7 +112,6 @@
         <button class="btn btn-primary" id="startNightBtn" onclick="hostStartNight()" disabled>🌙 开始夜晚阶段</button>
         <p class="text-center font-sm text-muted" id="diceHintAll">等待所有人摇骰子…</p>
       </div>
-
       <div id="dealingGuestWaiting" style="display:none;">
         <div class="card text-center" style="padding:16px;">
           <p class="text-muted">等待所有人摇骰子，房主将开始夜晚阶段…</p>
@@ -137,18 +119,15 @@
       </div>
     </div>
 
-    <!-- ==================== NIGHT CONSOLE (Host) ==================== -->
     <div id="page-night-console" class="page">
       <div class="phase-header">
         <span class="phase-header-icon">🌙</span>
         <span class="phase-header-text">夜晚控制台</span>
       </div>
-
       <div class="card night-console">
         <h3 style="margin-bottom:12px;text-align:center;">点数进度</h3>
         <div class="night-progress" id="nightProgress"></div>
       </div>
-
       <div class="card" style="display:flex;flex-direction:column;gap:10px;align-items:center;">
         <div class="night-number-indicator">
           <span class="night-number-label">当前点数</span>
@@ -163,23 +142,19 @@
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:var(--night-accent);" id="consoleTimerNum">10</div>
         </div>
       </div>
-
       <div class="card scrollable" style="max-height:180px;">
         <h3 style="margin-bottom:8px;">📝 夜晚日志</h3>
         <div id="nightLogList" style="font-size:0.82rem;color:var(--night-muted);display:flex;flex-direction:column;gap:4px;"></div>
       </div>
-
       <div id="accompliceSection" style="display:none;flex-direction:column;gap:12px;" class="card">
         <h3 id="accompliceTitle">🤝 选择共犯</h3>
         <p class="text-muted font-sm" id="accompliceDesc"></p>
         <div id="accomplicePlayerList" class="player-select-list"></div>
         <button class="btn btn-primary" id="accompliceConfirmBtn" onclick="confirmAccompliceSelection()" disabled>确认选择</button>
       </div>
-
       <button id="skipNightBtn" class="btn btn-muted hidden" onclick="hostSkipToDay()">⏭️ 跳过剩余夜晚</button>
     </div>
 
-    <!-- ==================== ACCOMPLICE NOTIFY (Guest) ==================== -->
     <div id="page-accomplice-notify" class="page">
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:20px;">
         <div style="font-size:4rem;animation:pulse 1s ease infinite;">🤝</div>
@@ -189,13 +164,11 @@
       </div>
     </div>
 
-    <!-- ==================== DAY ==================== -->
     <div id="page-day" class="page">
       <div class="phase-header">
         <span class="phase-header-icon">☀️</span>
         <span class="phase-header-text">白天讨论阶段</span>
       </div>
-
       <div class="card countdown-display">
         <span style="font-size:1.5rem;">⏱️</span>
         <span class="countdown-time" id="dayCountdown">05:00</span>
@@ -203,7 +176,6 @@
           <button class="btn btn-sm btn-muted" onclick="pauseResumeDayTimer()" id="pauseBtn">⏸ 暂停</button>
         </div>
       </div>
-
       <div class="card">
         <h3 style="margin-bottom:10px;">你的信息</h3>
         <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;">
@@ -219,24 +191,20 @@
           <span class="info-value text-accent" id="dayMyDice">?</span>
         </div>
       </div>
-
       <div class="card">
         <h3 style="margin-bottom:10px;">所有玩家</h3>
         <div class="player-list" id="dayPlayerList"></div>
       </div>
-
       <div id="dayHostControls" style="display:none;margin-top:auto;">
         <button class="btn btn-primary" onclick="hostStartVoting()">🗳️ 进入投票</button>
       </div>
     </div>
 
-    <!-- ==================== VOTING ==================== -->
     <div id="page-voting" class="page">
       <div class="phase-header">
         <span class="phase-header-icon">🗳️</span>
         <span class="phase-header-text">投票阶段</span>
       </div>
-
       <div class="card">
         <div class="info-row">
           <span class="info-label">投票进度</span>
@@ -246,26 +214,22 @@
           <div id="voteProgressBar" style="height:100%;background:var(--night-accent);border-radius:2px;transition:width 0.3s ease;width:0%;"></div>
         </div>
       </div>
-
       <div class="card" id="myVoteCard">
         <h3 style="margin-bottom:4px;">你怀疑谁？</h3>
         <p class="text-muted font-sm" style="margin-bottom:12px;">选择你认为是奶酪大盗的玩家</p>
         <div class="vote-grid" id="voteOptions"></div>
       </div>
-
       <div id="voteSubmitted" style="display:none;" class="card text-center">
         <div style="font-size:2rem;margin-bottom:8px;">✅</div>
         <p style="font-weight:600;">已投票！等待其他人…</p>
         <p class="text-muted font-sm" id="voteWaitingText" style="margin-top:4px;"></p>
       </div>
-
       <div id="votingHostReveal" style="display:none;margin-top:auto;">
         <button class="btn btn-primary" onclick="hostRevealVotes()">🎭 揭晓投票结果</button>
         <p class="text-center font-sm text-muted" style="margin-top:8px;" id="revealHint"></p>
       </div>
     </div>
 
-    <!-- ==================== RESULT ==================== -->
     <div id="page-result" class="page">
       <div id="winBanner" style="display:none;"></div>
       <div class="card">
@@ -281,14 +245,10 @@
       </div>
       <button class="btn btn-muted" onclick="leaveGame()">🚪 返回大厅</button>
     </div>
-
-  </div><!-- /container -->
+  </div>
 
 <script>
-// ======================================================================
-// CONFIG
-// ======================================================================
-const CIRCUMFERENCE = 2 * Math.PI * 26; // ~163.4
+const CIRCUMFERENCE = 2 * Math.PI * 26;
 const PLAYER_EMOJIS = ['🐭','🐹','🦊','🐰','🐻','🐼','🐨','🐯'];
 const PEER_CONFIG = {
   debug: 0,
@@ -297,29 +257,24 @@ const PEER_CONFIG = {
     { urls: 'stun:stun1.l.google.com:19302' }
   ]}
 };
+const DISCONNECT_TIMEOUT = 60000;
 
-// ======================================================================
-// STATE
-// ======================================================================
 let peer = null;
 let myId = '';
 const myName = (localStorage.getItem('playerName') || '玩家').trim();
 const isHost = localStorage.getItem('isHost') === 'true';
 let roomCode = localStorage.getItem('roomCode') || '';
 
-// Host only: map peerId -> DataConnection
 const connections = {};
-
-// Guest only: connection to host
+const disconnectTimers = {};
 let hostConn = null;
 
-// Authoritative game state (host maintains; guests receive via state_sync)
 let G = {
-  phase: 'waiting',      // waiting | dealing | night | day | voting | result
-  players: [],           // [{id, name, role, dice, isAccomplice, hasVoted, isConnected}]
+  phase: 'waiting',
+  players: [],
   currentNightNumber: 0,
   cheeseStolen: false,
-  votes: {},             // voterId -> targetId
+  votes: {},
   round: 0,
   discussionSeconds: 300,
   thiefId: '',
@@ -328,7 +283,6 @@ let G = {
   nightLog: []
 };
 
-// Local player state (some not in G to keep private)
 let myRole = '';
 let myDice = 0;
 let myIsAccomplice = false;
@@ -338,63 +292,77 @@ let dayTimerInterval = null;
 let dayTimerPaused = false;
 let dayTimeLeft = 300;
 let nightRunning = false;
-
-// Night promise resolver (host)
 let nightAccompliceResolve = null;
 let nightCurrentInterval = null;
-
-// Guest accomplice selection state
 let guestAccompliceSelected = new Set();
 let guestAccompliceRequired = 0;
-
-// Host accomplice selection state
 let hostAccompliceSelected = new Set();
 
 // ======================================================================
 // UTILITIES
 // ======================================================================
-function showToast(msg, type = 'info', ms = 3000) {
+function showToast(msg, type, ms) {
+  type = type || 'info'; ms = ms || 3000;
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
-  t.className = `toast toast-${type}`;
+  t.className = 'toast toast-' + type;
   t.textContent = msg;
   c.appendChild(t);
-  setTimeout(() => { if (t.parentNode) t.remove(); }, ms + 200);
+  setTimeout(function() { if (t.parentNode) t.remove(); }, ms + 200);
 }
 
 function vibrate(pat) { try { navigator.vibrate && navigator.vibrate(pat); } catch(e) {} }
 
-function uid6() {
-  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return Array.from({length:6}, () => c[Math.floor(Math.random()*c.length)]).join('');
-}
-
 function hostPeerId(code) { return 'ct2-' + code.toLowerCase() + '-host'; }
-
 function getEmoji(idx) { return PLAYER_EMOJIS[idx % PLAYER_EMOJIS.length]; }
-
-function pById(id) { return G.players.find(p => p.id === id); }
+function pById(id) { return G.players.find(function(p) { return p.id === id; }); }
 function myPlayer() { return pById(myId); }
 
 function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const el = document.getElementById('page-' + name);
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  var el = document.getElementById('page-' + name);
   if (el) el.classList.add('active');
   window.scrollTo(0, 0);
 }
 
 function setConnStatus(ok, msg) {
-  const dot = document.getElementById('connDot');
-  const st = document.getElementById('connStatus');
+  var dot = document.getElementById('connDot');
+  var st = document.getElementById('connStatus');
   if (dot) dot.className = 'status-dot' + (ok ? '' : ok === null ? ' connecting' : ' disconnected');
   if (st) st.textContent = msg || (ok ? '已连接' : '连接断开');
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 
 function fmtTime(s) {
-  const m = Math.floor(s/60).toString().padStart(2,'0');
+  var m = Math.floor(s/60).toString().padStart(2,'0');
   return m + ':' + (s%60).toString().padStart(2,'0');
+}
+
+// ======================================================================
+// STATE PERSISTENCE
+// ======================================================================
+function persistState() {
+  if (!isHost) return;
+  try {
+    localStorage.setItem('gameState', JSON.stringify(G));
+    localStorage.setItem('roomCode', roomCode);
+    localStorage.setItem('isHost', 'true');
+  } catch(e) { console.warn('persistState failed:', e); }
+}
+
+function clearPersistedState() {
+  localStorage.removeItem('gameState');
+}
+
+// ======================================================================
+// BROADCAST STATE (for visibilitychange)
+// ======================================================================
+function broadcastState() {
+  if (!isHost) return;
+  Object.keys(connections).forEach(function(pid) {
+    sendTo(pid, { type: 'state_sync', state: sanitize(G, pid) });
+  });
 }
 
 // ======================================================================
@@ -403,18 +371,18 @@ function fmtTime(s) {
 function initPeer(customId) {
   peer = customId ? new Peer(customId, PEER_CONFIG) : new Peer(PEER_CONFIG);
 
-  peer.on('open', id => {
+  peer.on('open', function(id) {
     myId = id;
     setConnStatus(true);
     if (isHost) onHostOpen();
     else onGuestOpen();
   });
 
-  peer.on('error', err => {
+  peer.on('error', function(err) {
     console.error('Peer error:', err.type, err);
     if (err.type === 'unavailable-id') {
       showToast('房间码冲突，请返回重试', 'error');
-      setTimeout(() => location.href = 'index.html', 2000);
+      setTimeout(function() { location.href = 'index.html'; }, 2000);
     } else if (err.type === 'peer-unavailable') {
       showToast('找不到该房间，请检查房间码', 'error');
       setConnStatus(false);
@@ -424,23 +392,47 @@ function initPeer(customId) {
     }
   });
 
-  peer.on('disconnected', () => {
+  peer.on('disconnected', function() {
     setConnStatus(false, '连接断开，尝试重连…');
-    setTimeout(() => { if (peer && !peer.destroyed) peer.reconnect(); }, 3000);
+    setTimeout(function() { if (peer && !peer.destroyed) peer.reconnect(); }, 3000);
   });
 
   if (isHost) {
-    peer.on('connection', conn => hostHandleIncoming(conn));
+    peer.on('connection', function(conn) { hostHandleIncoming(conn); });
   }
 }
 
 // ======================================================================
-// HOST — CONNECTION MANAGEMENT
+// HOST — OPEN
 // ======================================================================
 function onHostOpen() {
   if (!roomCode) { roomCode = "123"; localStorage.setItem("roomCode", roomCode); }
 
-  G.players = [{ id: myId, name: myName, role:'', dice:0, isAccomplice:false, hasVoted:false, isConnected:true }];
+  // Try to restore persisted game state
+  var savedState = localStorage.getItem('gameState');
+  if (savedState) {
+    try {
+      var parsed = JSON.parse(savedState);
+      if (parsed && parsed.phase && parsed.phase !== 'result' && parsed.phase !== 'waiting') {
+        G = parsed;
+        // Mark non-host players as disconnected; they need to rejoin
+        G.players.forEach(function(p, idx) {
+          if (idx === 0) {
+            // Host player
+            p.id = myId;
+            p.isConnected = true;
+          } else {
+            p.isConnected = false;
+          }
+        });
+        showToast('已恢复上次游戏状态，等待其他玩家重连', 'info', 5000);
+      }
+    } catch(e) { console.warn('restore state failed:', e); }
+  }
+
+  if (G.players.length === 0) {
+    G.players = [{ id: myId, name: myName, role:'', dice:0, isAccomplice:false, hasVoted:false, isConnected:true }];
+  }
 
   document.getElementById('lobbyRoomCode').textContent = roomCode;
   document.getElementById('hostControls').style.display = 'flex';
@@ -448,26 +440,48 @@ function onHostOpen() {
   renderLobby();
   updateStartBtn();
   buildQR();
+
+  // If game was in progress, show the appropriate page
+  if (G.phase !== 'waiting') {
+    renderPhase();
+  }
 }
 
+// ======================================================================
+// HOST — CONNECTION MANAGEMENT
+// ======================================================================
 function hostHandleIncoming(conn) {
-  conn.on('open', () => {
+  conn.on('open', function() {
     connections[conn.peer] = conn;
-    conn.on('data', data => hostOnData(data, conn.peer));
-    conn.on('close', () => hostOnDisconnect(conn.peer));
-    conn.on('error', () => hostOnDisconnect(conn.peer));
-    // Send current state immediately
+    conn.on('data', function(data) { hostOnData(data, conn.peer); });
+    conn.on('close', function() { hostOnDisconnect(conn.peer); });
+    conn.on('error', function() { hostOnDisconnect(conn.peer); });
     conn.send({ type:'state_sync', state: sanitize(G, conn.peer) });
   });
 }
 
 function hostOnDisconnect(pid) {
-  const p = pById(pid);
+  var p = pById(pid);
   if (p) {
     p.isConnected = false;
-    showToast(p.name + ' 断线', 'warning');
+    showToast(p.name + ' 断线，60秒内可重连', 'warning');
     hostBroadcast();
     renderLobby();
+    persistState();
+
+    // Remove after timeout if still disconnected
+    if (disconnectTimers[pid]) clearTimeout(disconnectTimers[pid]);
+    disconnectTimers[pid] = setTimeout(function() {
+      var player = pById(pid);
+      if (player && !player.isConnected) {
+        G.players = G.players.filter(function(pl) { return pl.id !== pid; });
+        showToast(player.name + ' 已超时离开', 'warning');
+        hostBroadcast();
+        renderLobby();
+        persistState();
+      }
+      delete disconnectTimers[pid];
+    }, DISCONNECT_TIMEOUT);
   }
   delete connections[pid];
 }
@@ -478,6 +492,7 @@ function hostOnDisconnect(pid) {
 function hostOnData(data, from) {
   switch (data.type) {
     case 'join_req':       hostJoin(data, from); break;
+    case 'rejoin':         hostRejoinPlayer(data, from); break;
     case 'dice_roll':      hostDiceRoll(data, from); break;
     case 'steal_cheese':   hostStealCheese(from); break;
     case 'check_dice':     hostCheckDice(data, from); break;
@@ -489,34 +504,83 @@ function hostOnData(data, from) {
 }
 
 function hostJoin(data, from) {
-  if (G.phase !== 'waiting') { sendTo(from, {type:'join_rej', reason:'游戏已开始'}); return; }
+  // If game is already running, treat as a rejoin attempt
+  if (G.phase !== 'waiting') {
+    hostRejoinPlayer({ name: data.name }, from);
+    return;
+  }
   if (G.players.length >= 8) { sendTo(from, {type:'join_rej', reason:'房间已满'}); return; }
 
-  let p = pById(from);
+  var p = pById(from);
   if (!p) {
-    p = {id:from, name:data.name, role:'', dice:0, isAccomplice:false, hasVoted:false, isConnected:true};
-    G.players.push(p);
+    // Check for a disconnected player with the same name (reconnect by name)
+    var byName = G.players.find(function(pl) { return pl.name === data.name && !pl.isConnected; });
+    if (byName) {
+      var oldId = byName.id;
+      byName.id = from;
+      byName.isConnected = true;
+      if (disconnectTimers[oldId]) { clearTimeout(disconnectTimers[oldId]); delete disconnectTimers[oldId]; }
+      sendTo(from, {type:'join_ok', id:from});
+      showToast(data.name + ' 重连了', 'success');
+    } else {
+      p = {id:from, name:data.name, role:'', dice:0, isAccomplice:false, hasVoted:false, isConnected:true};
+      G.players.push(p);
+      sendTo(from, {type:'join_ok', id:from});
+      showToast(data.name + ' 加入了', 'info');
+    }
   } else {
     p.isConnected = true; p.name = data.name;
+    if (disconnectTimers[from]) { clearTimeout(disconnectTimers[from]); delete disconnectTimers[from]; }
+    sendTo(from, {type:'join_ok', id:from});
+    showToast(data.name + ' 重连了', 'success');
   }
-  sendTo(from, {type:'join_ok', id:from});
-  showToast(data.name + ' 加入了', 'info');
   hostBroadcast();
   renderLobby();
   updateStartBtn();
+  persistState();
+}
+
+function hostRejoinPlayer(data, from) {
+  // Find player by name among existing players
+  var p = G.players.find(function(pl) { return pl.name === data.name; });
+  if (!p) {
+    // Name not found, reject
+    sendTo(from, {type:'join_rej', reason:'找不到该玩家，游戏已开始'});
+    return;
+  }
+
+  var oldId = p.id;
+  p.id = from;
+  p.isConnected = true;
+
+  // Clear disconnect timer for old id
+  if (disconnectTimers[oldId]) { clearTimeout(disconnectTimers[oldId]); delete disconnectTimers[oldId]; }
+
+  // Send join_ok and full current state
+  sendTo(from, {type:'join_ok', id:from});
+  sendTo(from, {type:'state_sync', state: sanitize(G, from)});
+  // Re-send role assignment
+  if (p.role) {
+    sendTo(from, {type:'role_assign', role:p.role, isAccomplice:!!p.isAccomplice});
+  }
+
+  showToast(p.name + ' 重连了', 'success');
+  hostBroadcast();
+  renderLobby();
+  persistState();
 }
 
 function hostDiceRoll(data, from) {
-  const p = pById(from);
-  if (p) { p.dice = data.value; hostBroadcast(); updateDiceStatus(); }
+  var p = pById(from);
+  if (p) { p.dice = data.value; hostBroadcast(); updateDiceStatus(); persistState(); }
 }
 
 function hostStealCheese(from) {
-  if (from === G.thiefId) { G.cheeseStolen = true; addLog('🧀 奶酪被偷走了！'); hostBroadcast(); }
+  if (from === G.thiefId) { G.cheeseStolen = true; addLog('🧀 奶酪被偷走了！'); hostBroadcast(); persistState(); }
 }
 
 function hostCheckDice(data, from) {
-  const t = pById(data.target);
+  var t = pById(data.target);
   if (t) {
     sendTo(from, {type:'check_result', name:t.name, dice:t.dice});
     addLog('👁️ 有人查看了 ' + t.name + ' 的点数');
@@ -524,13 +588,14 @@ function hostCheckDice(data, from) {
 }
 
 function hostVote(data, from) {
-  const p = pById(from);
+  var p = pById(from);
   if (p && !p.hasVoted && data.target !== from) {
     p.hasVoted = true;
     G.votes[from] = data.target;
     hostBroadcast();
     updateVoteProgress();
-    const done = G.players.filter(p=>p.hasVoted).length;
+    persistState();
+    var done = G.players.filter(function(p) { return p.hasVoted; }).length;
     if (done === G.players.length) showToast('所有人已投票！', 'success');
   }
 }
@@ -543,7 +608,6 @@ function hostAccompliceAck(from) {
 }
 
 function hostAccomplicePick(data, from) {
-  // Guest thief sent their accomplice picks
   if (from === G.thiefId) applyAccomplicePicks(data.ids);
 }
 
@@ -551,23 +615,24 @@ function hostAccomplicePick(data, from) {
 // HOST — BROADCAST
 // ======================================================================
 function hostBroadcast() {
-  Object.keys(connections).forEach(pid => sendTo(pid, {type:'state_sync', state:sanitize(G, pid)}));
+  Object.keys(connections).forEach(function(pid) {
+    sendTo(pid, {type:'state_sync', state:sanitize(G, pid)});
+  });
 }
 
 function hostBroadcastRaw(msg) {
-  Object.keys(connections).forEach(pid => sendTo(pid, msg));
+  Object.keys(connections).forEach(function(pid) { sendTo(pid, msg); });
 }
 
 function sendTo(pid, msg) {
-  const c = connections[pid];
+  var c = connections[pid];
   if (c && c.open) { try { c.send(msg); } catch(e) { console.warn('send fail', pid, e); } }
 }
 
-// Strip other players' private info when syncing to a specific player
 function sanitize(state, forId) {
-  const s = JSON.parse(JSON.stringify(state));
+  var s = JSON.parse(JSON.stringify(state));
   if (s.phase === 'dealing' || s.phase === 'night') {
-    s.players = s.players.map(p => {
+    s.players = s.players.map(function(p) {
       if (p.id === forId) return p;
       return {id:p.id, name:p.name, role:'', dice:0, isAccomplice:false, hasVoted:p.hasVoted, isConnected:p.isConnected};
     });
@@ -582,18 +647,31 @@ function onGuestOpen() {
   connectToHost();
 }
 
-let reconnectAttempts = 0;
-function connectToHost() {  hostConn = peer.connect(hostPeerId(roomCode), {reliable:true, serialization:'json'});
+var reconnectAttempts = 0;
+function connectToHost() {
+  hostConn = peer.connect(hostPeerId(roomCode), {reliable:true, serialization:'json'});
 
-  hostConn.on('open', () => {
+  hostConn.on('open', function() {
     reconnectAttempts = 0;
     setConnStatus(true);
+    // Check if this is a rejoin (game was in progress)
+    var savedState = localStorage.getItem('gameState');
+    if (savedState) {
+      try {
+        var parsed = JSON.parse(savedState);
+        if (parsed && parsed.phase && parsed.phase !== 'waiting' && parsed.phase !== 'result') {
+          // Send rejoin message
+          hostConn.send({type:'rejoin', name:myName});
+          return;
+        }
+      } catch(e) {}
+    }
     hostConn.send({type:'join_req', name:myName});
   });
 
-  hostConn.on('data', data => guestOnData(data));
+  hostConn.on('data', function(data) { guestOnData(data); });
 
-  hostConn.on('close', () => {
+  hostConn.on('close', function() {
     setConnStatus(false, '与房主断线');
     if (G.phase !== 'result' && reconnectAttempts < 5) {
       reconnectAttempts++;
@@ -602,7 +680,7 @@ function connectToHost() {  hostConn = peer.connect(hostPeerId(roomCode), {relia
     }
   });
 
-  hostConn.on('error', err => {
+  hostConn.on('error', function(err) {
     setConnStatus(false, '连接失败: ' + err.type);
   });
 }
@@ -618,7 +696,7 @@ function guestOnData(data) {
       break;
     case 'join_rej':
       showToast('加入失败: ' + data.reason, 'error');
-      setTimeout(() => location.href = 'index.html', 2000);
+      setTimeout(function() { location.href = 'index.html'; }, 2000);
       break;
     case 'state_sync':
       applySync(data.state);
@@ -660,11 +738,10 @@ function guestOnData(data) {
 }
 
 function applySync(state) {
-  const prevPhase = G.phase;
+  var prevPhase = G.phase;
   G = Object.assign(G, state);
 
-  // Restore my private data
-  const me = myPlayer();
+  var me = myPlayer();
   if (me && me.role) myRole = me.role;
   if (me && me.dice) myDice = me.dice;
   if (me) myIsAccomplice = !!me.isAccomplice;
@@ -682,7 +759,11 @@ function onPhaseTransition(from, to) {
     vibrate([100,50,100,50,100]);
   }
   if (to === 'voting') document.body.classList.add('day-mode');
-  if (to === 'result') document.body.classList.remove('day-mode');
+  if (to === 'result') {
+    document.body.classList.remove('day-mode');
+    // Clear saved state when game ends
+    clearPersistedState();
+  }
   if (to === 'waiting') document.body.classList.remove('day-mode');
 }
 
@@ -690,7 +771,7 @@ function onPhaseTransition(from, to) {
 // HOST GAME FLOW
 // ======================================================================
 function hostStartGame() {
-  if (G.players.filter(p=>p.isConnected).length < 3) {
+  if (G.players.filter(function(p) { return p.isConnected; }).length < 3) {
     showToast('至少需要3名玩家', 'warning'); return;
   }
   G.discussionSeconds = parseInt(document.getElementById('discussionTime').value) || 300;
@@ -702,20 +783,19 @@ function hostStartGame() {
   G.accompliceCount = 0;
   G.accompliceAckCount = 0;
 
-  // Assign roles
-  G.players.forEach(p => { p.role='mouse'; p.dice=0; p.isAccomplice=false; p.hasVoted=false; });
-  const ti = Math.floor(Math.random() * G.players.length);
+  G.players.forEach(function(p) { p.role='mouse'; p.dice=0; p.isAccomplice=false; p.hasVoted=false; });
+  var ti = Math.floor(Math.random() * G.players.length);
   G.players[ti].role = 'thief';
   G.thiefId = G.players[ti].id;
 
-  // Send role to each player privately
-  G.players.forEach(p => {
-    const msg = {type:'role_assign', role:p.role, isAccomplice:false};
+  G.players.forEach(function(p) {
+    var msg = {type:'role_assign', role:p.role, isAccomplice:false};
     if (p.id === myId) { myRole = p.role; myIsAccomplice = false; updateIdentityCard(); }
     else sendTo(p.id, msg);
   });
 
   hostBroadcast();
+  persistState();
   renderPhase();
 }
 
@@ -727,40 +807,41 @@ async function hostStartNight() {
 
   hostBroadcast();
   hostBroadcastRaw({type:'sleep'});
+  persistState();
   renderPhase();
 
   await sleep(1500);
   renderNightConsole();
 
-  for (let n = 1; n <= 6 && nightRunning; n++) {
+  for (var n = 1; n <= 6 && nightRunning; n++) {
     G.currentNightNumber = n;
     hostBroadcast();
     updateNightProgress(n);
 
-    const waking = G.players.filter(p => p.dice === n);
-    const thief  = waking.find(p => p.role === 'thief');
-    const mice   = waking.filter(p => p.role === 'mouse');
+    var waking = G.players.filter(function(p) { return p.dice === n; });
+    var thief  = waking.find(function(p) { return p.role === 'thief'; });
+    var mice   = waking.filter(function(p) { return p.role === 'mouse'; });
 
     if (waking.length > 0) {
-      // Wake each player
-      waking.forEach(p => {
-        const msg = buildWakeMsg(p, mice);
+      var _mice = mice;
+      waking.forEach(function(p) {
+        var msg = buildWakeMsg(p, _mice);
         if (p.id === myId) { vibrate([200,100,200]); showWakeUI(msg); }
-        else sendTo(p.id, {type:'wake_up', ...msg});
+        else sendTo(p.id, Object.assign({type:'wake_up'}, msg));
       });
-      addLog(`点数 ${n}: ${waking.map(p=>p.name).join('、')} 醒来`);
+      addLog('点数 ' + n + ': ' + waking.map(function(p){return p.name;}).join('、') + ' 醒来');
     } else {
-      addLog(`点数 ${n}: 无人醒来`);
+      addLog('点数 ' + n + ': 无人醒来');
     }
 
     updateConsoleInfo(n, waking);
     await hostNightCountdown(10, n);
 
-    // Put everyone back to sleep
-    waking.forEach(p => {
+    var _waking = waking;
+    _waking.forEach(function(p) {
       if (p.id !== myId) sendTo(p.id, {type:'sleep'});
     });
-    if (waking.find(p => p.id === myId)) hideWakeUI();
+    if (_waking.find(function(p) { return p.id === myId; })) hideWakeUI();
 
     await sleep(600);
   }
@@ -776,18 +857,18 @@ function buildWakeMsg(player, miceWaking) {
   if (miceWaking.length === 1) {
     return {role:'mouse', emoji:'🐭', title:'嗜睡老鼠醒来', desc:'你是唯一醒着的老鼠，可以查看一名玩家的骰子点数', action:'check'};
   }
-  const others = miceWaking.filter(m => m.id !== player.id).map(m=>m.name).join('、');
+  var others = miceWaking.filter(function(m) { return m.id !== player.id; }).map(function(m){return m.name;}).join('、');
   return {role:'mouse', emoji:'🐭', title:'你看到了同伴！', desc:'与你同时醒来的有: ' + others, action:'recognize'};
 }
 
 async function runAccomplicePhase() {
-  const n = G.players.length;
+  var n = G.players.length;
   if (n < 5) { await transitionToDay(); return; }
 
-  const thief = pById(G.thiefId);
+  var thief = pById(G.thiefId);
 
   if (n === 5) {
-    const same = G.players.filter(p => p.role==='mouse' && p.dice===thief.dice);
+    var same = G.players.filter(function(p) { return p.role==='mouse' && p.dice===thief.dice; });
     if (same.length === 0) {
       addLog('5人局：无共犯');
       await transitionToDay();
@@ -800,47 +881,45 @@ async function runAccomplicePhase() {
       await hostPickAccomplices(thief, same, 1, '5人局，选1位同点数玩家成为共犯');
     }
   } else if (n === 6) {
-    await hostPickAccomplices(thief, G.players.filter(p=>p.id!==thief.id), 1,
+    await hostPickAccomplices(thief, G.players.filter(function(p){return p.id!==thief.id;}), 1,
       '6人局，选1位玩家成为共犯（对方会知道你的身份）');
   } else if (n === 7) {
-    await hostPickAccomplices(thief, G.players.filter(p=>p.id!==thief.id), 2,
+    await hostPickAccomplices(thief, G.players.filter(function(p){return p.id!==thief.id;}), 2,
       '7人局，选2位玩家成为共犯（对方不知道大盗是谁）');
   } else {
-    await hostPickAccomplices(thief, G.players.filter(p=>p.id!==thief.id), 2,
+    await hostPickAccomplices(thief, G.players.filter(function(p){return p.id!==thief.id;}), 2,
       '8人局，选2位玩家成为共犯（三人互相认识）');
   }
 }
 
 function hostPickAccomplices(thief, candidates, count, desc) {
-  return new Promise(resolve => {
+  return new Promise(function(resolve) {
     nightAccompliceResolve = resolve;
     G.accompliceCount = count;
     G.accompliceAckCount = 0;
     hostAccompliceSelected.clear();
 
     if (thief.id === myId) {
-      // Host is thief, show selection on console
-      const sec = document.getElementById('accompliceSection');
+      var sec = document.getElementById('accompliceSection');
       sec.style.display = 'flex';
-      document.getElementById('accompliceTitle').textContent = `🤝 选择共犯（选${count}人）`;
+      document.getElementById('accompliceTitle').textContent = '🤝 选择共犯（选' + count + '人）';
       document.getElementById('accompliceDesc').textContent = desc;
-      const list = document.getElementById('accomplicePlayerList');
+      var list = document.getElementById('accomplicePlayerList');
       list.innerHTML = '';
-      candidates.forEach((p,i) => {
-        const btn = document.createElement('button');
+      candidates.forEach(function(p, i) {
+        var btn = document.createElement('button');
         btn.className = 'player-select-item';
         btn.dataset.id = p.id;
-        btn.innerHTML = `<span style="font-size:1.5rem;">${getEmoji(G.players.indexOf(p))}</span><span class="player-name">${p.name}</span>`;
-        btn.onclick = () => toggleHostAccomplice(p.id, count, btn);
+        btn.innerHTML = '<span style="font-size:1.5rem;">' + getEmoji(G.players.indexOf(p)) + '</span><span class="player-name">' + p.name + '</span>';
+        btn.onclick = function() { toggleHostAccomplice(p.id, count, btn); };
         list.appendChild(btn);
       });
       document.getElementById('accompliceConfirmBtn').disabled = true;
     } else {
-      // Thief is a guest, send them the picker
       sendTo(thief.id, {
         type:'accomplice_pick_req',
-        candidates: candidates.map(p => ({id:p.id, name:p.name, idx:G.players.indexOf(p)})),
-        count, desc
+        candidates: candidates.map(function(p) { return {id:p.id, name:p.name, idx:G.players.indexOf(p)}; }),
+        count: count, desc: desc
       });
     }
   });
@@ -852,9 +931,10 @@ function toggleHostAccomplice(id, max, btn) {
     btn.classList.remove('selected');
   } else {
     if (hostAccompliceSelected.size >= max) {
-      const first = hostAccompliceSelected.values().next().value;
+      var first = hostAccompliceSelected.values().next().value;
       hostAccompliceSelected.delete(first);
-      document.querySelector(`#accomplicePlayerList [data-id="${first}"]`)?.classList.remove('selected');
+      var el = document.querySelector('#accomplicePlayerList [data-id="' + first + '"]');
+      if (el) el.classList.remove('selected');
     }
     hostAccompliceSelected.add(id);
     btn.classList.add('selected');
@@ -867,25 +947,26 @@ function confirmAccompliceSelection() {
 }
 
 function applyAccomplicePicks(ids) {
-  const n = G.players.length;
-  ids.forEach(id => { const p = pById(id); if (p) p.isAccomplice = true; });
+  var n = G.players.length;
+  ids.forEach(function(id) { var p = pById(id); if (p) p.isAccomplice = true; });
   G.accompliceCount = ids.length;
   G.accompliceAckCount = 0;
 
-  const sec = document.getElementById('accompliceSection');
+  var sec = document.getElementById('accompliceSection');
   sec.style.display = 'none';
 
-  const thief = pById(G.thiefId);
-  let notifyDesc = '';
+  var thief = pById(G.thiefId);
+  var notifyDesc = '';
   if (n === 5) notifyDesc = '你与奶酪大盗骰出了相同点数！';
-  else if (n === 6) notifyDesc = `奶酪大盗是 ${thief.name}，请帮助他躲避追查！`;
+  else if (n === 6) notifyDesc = '奶酪大盗是 ' + thief.name + '，请帮助他躲避追查！';
   else if (n === 7) notifyDesc = '你成为了共犯，帮助大盗，但你不知道大盗是谁。';
-  else notifyDesc = `你们三人互相认识。大盗是 ${thief.name}。`;
+  else notifyDesc = '你们三人互相认识。大盗是 ' + thief.name + '。';
 
-  addLog(`共犯：${ids.map(id=>pById(id)?.name).join('、') || '无'}`);
+  addLog('共犯：' + (ids.map(function(id){return pById(id) ? pById(id).name : '';}).join('、') || '无'));
   hostBroadcast();
+  persistState();
 
-  notifyAndWaitAccomplices(ids.map(id=>pById(id)).filter(Boolean), notifyDesc).then(() => {
+  notifyAndWaitAccomplices(ids.map(function(id){return pById(id);}).filter(Boolean), notifyDesc).then(function() {
     if (nightAccompliceResolve) { nightAccompliceResolve(); nightAccompliceResolve = null; }
   });
 }
@@ -896,22 +977,21 @@ async function notifyAndWaitAccomplices(players, desc) {
   G.accompliceCount = players.length;
   G.accompliceAckCount = 0;
 
-  let hostIsAccomplice = false;
-  players.forEach(p => {
+  var hostIsAccomplice = false;
+  players.forEach(function(p) {
     if (p.id === myId) hostIsAccomplice = true;
-    else sendTo(p.id, {type:'accomplice_notify', desc});
+    else sendTo(p.id, {type:'accomplice_notify', desc:desc});
   });
 
   if (hostIsAccomplice) {
     myIsAccomplice = true;
-    const me = myPlayer(); if (me) me.isAccomplice = true;
+    var me = myPlayer(); if (me) me.isAccomplice = true;
     showToast('你成为了共犯！', 'warning', 5000);
     vibrate([300,100,300,100,300]);
-    // Auto-ack after 4s
-    setTimeout(() => { G.accompliceAckCount++; checkAccompliceAllAcked(); }, 4000);
+    setTimeout(function() { G.accompliceAckCount++; checkAccompliceAllAcked(); }, 4000);
   }
 
-  return new Promise(resolve => {
+  return new Promise(function(resolve) {
     nightAccompliceResolve = resolve;
     checkAccompliceAllAcked();
   });
@@ -931,6 +1011,7 @@ async function transitionToDay() {
 
   hostBroadcast();
   hostBroadcastRaw({type:'sleep'});
+  persistState();
   document.body.classList.add('day-mode');
   hideNightOverlay();
   renderPhase();
@@ -941,32 +1022,32 @@ async function transitionToDay() {
 // NIGHT TIMER
 // ======================================================================
 async function hostNightCountdown(seconds, numLabel) {
-  return new Promise(resolve => {
-    let left = seconds;
+  return new Promise(function(resolve) {
+    var left = seconds;
     updateConsoleTimer(left, seconds);
     updateOverlayTimer(left, seconds);
-    hostBroadcastRaw({type:'night_tick', left, total:seconds});
+    hostBroadcastRaw({type:'night_tick', left:left, total:seconds});
 
-    nightCurrentInterval = setInterval(() => {
+    nightCurrentInterval = setInterval(function() {
       left--;
       updateConsoleTimer(left, seconds);
       updateOverlayTimer(left, seconds);
-      hostBroadcastRaw({type:'night_tick', left, total:seconds});
+      hostBroadcastRaw({type:'night_tick', left:left, total:seconds});
       if (left <= 0) { clearInterval(nightCurrentInterval); resolve(); }
     }, 1000);
   });
 }
 
 function updateConsoleTimer(left, total) {
-  const ring = document.getElementById('consoleTimerRing');
-  const num  = document.getElementById('consoleTimerNum');
+  var ring = document.getElementById('consoleTimerRing');
+  var num  = document.getElementById('consoleTimerNum');
   if (ring) ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - left/total);
   if (num) num.textContent = left;
 }
 
 function updateOverlayTimer(left, total) {
-  const ring = document.getElementById('timerRing');
-  const num  = document.getElementById('timerNum');
+  var ring = document.getElementById('timerRing');
+  var num  = document.getElementById('timerNum');
   if (ring) ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - left/total);
   if (num) num.textContent = left;
 }
@@ -974,9 +1055,9 @@ function updateOverlayTimer(left, total) {
 function addLog(msg) {
   if (!G.nightLog) G.nightLog = [];
   G.nightLog.push(msg);
-  const list = document.getElementById('nightLogList');
+  var list = document.getElementById('nightLogList');
   if (list) {
-    const d = document.createElement('div');
+    var d = document.createElement('div');
     d.textContent = msg;
     list.appendChild(d);
     list.parentElement.scrollTop = list.parentElement.scrollHeight;
@@ -987,7 +1068,7 @@ function addLog(msg) {
 // NIGHT OVERLAY
 // ======================================================================
 function showNightBlack() {
-  const ov = document.getElementById('nightOverlay');
+  var ov = document.getElementById('nightOverlay');
   ov.classList.remove('hidden');
   document.getElementById('nightMsg').textContent = '闭上眼睛…';
   document.getElementById('wakeContent').innerHTML = '';
@@ -999,32 +1080,32 @@ function hideNightOverlay() {
 }
 
 function showWakeUI(data) {
-  const ov = document.getElementById('nightOverlay');
+  var ov = document.getElementById('nightOverlay');
   ov.classList.remove('hidden');
   document.getElementById('nightMsg').textContent = '';
   document.getElementById('nightTimerWrap').classList.remove('hidden');
 
-  let html = `<div class="wake-content">
-    <div class="wake-role">${data.role==='thief' ? '🦊 奶酪大盗' : '🐭 嗜睡老鼠'}</div>
-    <div class="wake-emoji">${data.emoji||'👁️'}</div>
-    <div class="wake-title">${data.title}</div>
-    <div class="wake-subtitle">${data.desc}</div>`;
+  var html = '<div class="wake-content">' +
+    '<div class="wake-role">' + (data.role==='thief' ? '🦊 奶酪大盗' : '🐭 嗜睡老鼠') + '</div>' +
+    '<div class="wake-emoji">' + (data.emoji||'👁️') + '</div>' +
+    '<div class="wake-title">' + data.title + '</div>' +
+    '<div class="wake-subtitle">' + data.desc + '</div>';
 
   if (data.action === 'steal') {
-    html += `<button class="btn btn-danger" id="stealBtn" onclick="doStealCheese()" style="width:200px;">🧀 拿走奶酪</button>`;
+    html += '<button class="btn btn-danger" id="stealBtn" onclick="doStealCheese()" style="width:200px;">🧀 拿走奶酪</button>';
   } else if (data.action === 'check') {
-    html += `<div id="checkList" style="width:100%;display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow-y:auto;">`;
-    G.players.forEach((p,i) => {
+    html += '<div id="checkList" style="width:100%;display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow-y:auto;">';
+    G.players.forEach(function(p, i) {
       if (p.id !== myId) {
-        html += `<button class="player-select-item" onclick="doCheckDice('${p.id}')">
-          <span>${getEmoji(i)}</span><span>${p.name}</span>
-        </button>`;
+        html += '<button class="player-select-item" onclick="doCheckDice(\'' + p.id + '\')">' +
+          '<span>' + getEmoji(i) + '</span><span>' + p.name + '</span>' +
+          '</button>';
       }
     });
-    html += `</div>`;
+    html += '</div>';
   }
 
-  html += `</div>`;
+  html += '</div>';
   document.getElementById('wakeContent').innerHTML = html;
 }
 
@@ -1035,47 +1116,44 @@ function hideWakeUI() {
 }
 
 function doStealCheese() {
-  const btn = document.getElementById('stealBtn');
+  var btn = document.getElementById('stealBtn');
   if (btn) { btn.disabled = true; btn.textContent = '✅ 已拿走奶酪'; }
-  if (isHost) { G.cheeseStolen = true; addLog('🧀 奶酪被偷走了！'); hostBroadcast(); }
+  if (isHost) { G.cheeseStolen = true; addLog('🧀 奶酪被偷走了！'); hostBroadcast(); persistState(); }
   else hostConn.send({type:'steal_cheese'});
   showToast('奶酪已拿走！', 'success');
 }
 
 function doCheckDice(targetId) {
-  document.querySelectorAll('#checkList .player-select-item').forEach(b => { b.disabled=true; b.classList.add('disabled'); });
+  document.querySelectorAll('#checkList .player-select-item').forEach(function(b) { b.disabled=true; b.classList.add('disabled'); });
   if (isHost) {
-    const t = pById(targetId);
-    if (t) { showToast(t.name + ' 的点数是 ' + t.dice, 'info', 5000); addLog('👁️ 主持人查看了 '+t.name+' 的点数'); }
+    var t = pById(targetId);
+    if (t) { showToast(t.name + ' 的点数是 ' + t.dice, 'info', 5000); addLog('👁️ 主持人查看了 ' + t.name + ' 的点数'); }
   } else {
     hostConn.send({type:'check_dice', target:targetId});
   }
 }
 
-// Guest accomplice picker
 function showGuestAccomplicePicker(data) {
   guestAccompliceSelected.clear();
   guestAccompliceRequired = data.count;
   showNightBlack();
-  const ov = document.getElementById('nightOverlay');
+  var ov = document.getElementById('nightOverlay');
   ov.classList.remove('hidden');
   document.getElementById('nightMsg').textContent = '';
 
-  let html = `<div class="wake-content" style="max-width:90vw;">
-    <div class="wake-emoji">🦊</div>
-    <div class="wake-title">选择共犯（选${data.count}人）</div>
-    <div class="wake-subtitle">${data.desc}</div>
-    <div id="gPickList" style="width:100%;display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow-y:auto;">`;
+  var html = '<div class="wake-content" style="max-width:90vw;">' +
+    '<div class="wake-emoji">🦊</div>' +
+    '<div class="wake-title">选择共犯（选' + data.count + '人）</div>' +
+    '<div class="wake-subtitle">' + data.desc + '</div>' +
+    '<div id="gPickList" style="width:100%;display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow-y:auto;">';
 
-  data.candidates.forEach(p => {
-    html += `<button class="player-select-item" data-id="${p.id}" onclick="toggleGuestPick('${p.id}',this)">
-      <span>${getEmoji(p.idx)}</span><span>${p.name}</span>
-    </button>`;
+  data.candidates.forEach(function(p) {
+    html += '<button class="player-select-item" data-id="' + p.id + '" onclick="toggleGuestPick(\'' + p.id + '\',this)">' +
+      '<span>' + getEmoji(p.idx) + '</span><span>' + p.name + '</span>' +
+      '</button>';
   });
 
-  html += `</div>
-    <button class="btn btn-primary" id="gPickConfirm" onclick="submitGuestPick()" disabled style="width:200px;margin-top:8px;">确认</button>
-  </div>`;
+  html += '</div><button class="btn btn-primary" id="gPickConfirm" onclick="submitGuestPick()" disabled style="width:200px;margin-top:8px;">确认</button></div>';
 
   document.getElementById('wakeContent').innerHTML = html;
 }
@@ -1086,14 +1164,15 @@ function toggleGuestPick(id, btn) {
     btn.classList.remove('selected');
   } else {
     if (guestAccompliceSelected.size >= guestAccompliceRequired) {
-      const first = guestAccompliceSelected.values().next().value;
+      var first = guestAccompliceSelected.values().next().value;
       guestAccompliceSelected.delete(first);
-      document.querySelector(`#gPickList [data-id="${first}"]`)?.classList.remove('selected');
+      var el = document.querySelector('#gPickList [data-id="' + first + '"]');
+      if (el) el.classList.remove('selected');
     }
     guestAccompliceSelected.add(id);
     btn.classList.add('selected');
   }
-  const btn2 = document.getElementById('gPickConfirm');
+  var btn2 = document.getElementById('gPickConfirm');
   if (btn2) btn2.disabled = guestAccompliceSelected.size !== guestAccompliceRequired;
 }
 
@@ -1116,7 +1195,7 @@ function startDayTimer() {
   clearInterval(dayTimerInterval);
   dayTimerPaused = false;
   updateDayCountdown();
-  dayTimerInterval = setInterval(() => {
+  dayTimerInterval = setInterval(function() {
     if (dayTimerPaused) return;
     dayTimeLeft = Math.max(0, dayTimeLeft - 1);
     updateDayCountdown();
@@ -1126,7 +1205,7 @@ function startDayTimer() {
 }
 
 function updateDayCountdown() {
-  const el = document.getElementById('dayCountdown');
+  var el = document.getElementById('dayCountdown');
   if (!el) return;
   el.textContent = fmtTime(dayTimeLeft);
   el.classList.toggle('urgent', dayTimeLeft <= 30);
@@ -1134,16 +1213,17 @@ function updateDayCountdown() {
 
 function pauseResumeDayTimer() {
   dayTimerPaused = !dayTimerPaused;
-  const btn = document.getElementById('pauseBtn');
+  var btn = document.getElementById('pauseBtn');
   if (btn) btn.textContent = dayTimerPaused ? '▶ 继续' : '⏸ 暂停';
 }
 
 function hostStartVoting() {
   G.phase = 'voting';
-  G.players.forEach(p => { p.hasVoted=false; });
+  G.players.forEach(function(p) { p.hasVoted=false; });
   G.votes = {};
   clearInterval(dayTimerInterval);
   hostBroadcast();
+  persistState();
   renderPhase();
 }
 
@@ -1151,37 +1231,39 @@ function hostStartVoting() {
 // VOTING
 // ======================================================================
 function castVote(targetId) {
-  const me = myPlayer();
+  var me = myPlayer();
   if (!me || me.hasVoted || targetId === myId) return;
   me.hasVoted = true;
   if (isHost) {
     G.votes[myId] = targetId;
     hostBroadcast();
     updateVoteProgress();
-    const done = G.players.filter(p=>p.hasVoted).length;
+    persistState();
+    var done = G.players.filter(function(p){return p.hasVoted;}).length;
     if (done === G.players.length) showToast('所有人已投票！', 'success');
   } else {
     hostConn.send({type:'vote', target:targetId});
   }
   document.getElementById('myVoteCard').style.display = 'none';
   document.getElementById('voteSubmitted').style.display = 'flex';
-  document.getElementById('voteWaitingText').textContent = '你投给了 ' + (pById(targetId)?.name || '?');
+  document.getElementById('voteWaitingText').textContent = '你投给了 ' + (pById(targetId) ? pById(targetId).name : '?');
 }
 
 function updateVoteProgress() {
-  const done = G.players.filter(p=>p.hasVoted).length;
-  const total = G.players.length;
-  const el = document.getElementById('voteProgressText');
-  if (el) el.textContent = `${done}/${total} 人已投票`;
-  const bar = document.getElementById('voteProgressBar');
+  var done = G.players.filter(function(p){return p.hasVoted;}).length;
+  var total = G.players.length;
+  var el = document.getElementById('voteProgressText');
+  if (el) el.textContent = done + '/' + total + ' 人已投票';
+  var bar = document.getElementById('voteProgressBar');
   if (bar) bar.style.width = (done/total*100) + '%';
-  const hint = document.getElementById('revealHint');
-  if (hint) hint.textContent = done < total ? `还有 ${total-done} 人未投票` : '所有人已投票！';
+  var hint = document.getElementById('revealHint');
+  if (hint) hint.textContent = done < total ? '还有 ' + (total-done) + ' 人未投票' : '所有人已投票！';
 }
 
 function hostRevealVotes() {
   G.phase = 'result';
   hostBroadcast();
+  persistState();
   renderPhase();
 }
 
@@ -1189,76 +1271,71 @@ function hostRevealVotes() {
 // RESULT
 // ======================================================================
 function renderResult() {
-  // Tally votes
-  const counts = {};
-  G.players.forEach(p => { counts[p.id] = 0; });
-  Object.values(G.votes).forEach(tid => { if (counts[tid]!==undefined) counts[tid]++; });
-  const maxV = Math.max(0, ...Object.values(counts));
-  const topIds = G.players.filter(p => counts[p.id] === maxV && maxV > 0).map(p=>p.id);
+  var counts = {};
+  G.players.forEach(function(p) { counts[p.id] = 0; });
+  Object.values(G.votes).forEach(function(tid) { if (counts[tid]!==undefined) counts[tid]++; });
+  var maxV = Math.max.apply(null, [0].concat(Object.values(counts)));
+  var topIds = G.players.filter(function(p) { return counts[p.id] === maxV && maxV > 0; }).map(function(p){return p.id;});
 
-  // Win condition
-  const topIsThiefSide = topIds.some(id => { const p=pById(id); return p && (p.role==='thief'||p.isAccomplice); });
-  const banner = document.getElementById('winBanner');
+  var topIsThiefSide = topIds.some(function(id) { var p=pById(id); return p && (p.role==='thief'||p.isAccomplice); });
+  var banner = document.getElementById('winBanner');
   banner.style.display = 'block';
   if (topIsThiefSide) {
     banner.className = 'win-banner mice-win';
-    banner.innerHTML = `<span class="win-emoji">🐭</span><div class="win-title">嗜睡老鼠胜利！</div><p style="margin-top:8px;color:#aaa;font-size:0.9rem;">大盗/共犯被找出了！</p>`;
+    banner.innerHTML = '<span class="win-emoji">🐭</span><div class="win-title">嗜睡老鼠胜利！</div><p style="margin-top:8px;color:#aaa;font-size:0.9rem;">大盗/共犯被找出了！</p>';
   } else {
     banner.className = 'win-banner thieves-win';
-    banner.innerHTML = `<span class="win-emoji">🦊</span><div class="win-title">奶酪大盗获胜！</div><p style="margin-top:8px;color:#aaa;font-size:0.9rem;">大盗成功逃脱！</p>`;
+    banner.innerHTML = '<span class="win-emoji">🦊</span><div class="win-title">奶酪大盗获胜！</div><p style="margin-top:8px;color:#aaa;font-size:0.9rem;">大盗成功逃脱！</p>';
   }
 
-  // Render vote arrows with stagger
-  const rp = document.getElementById('resultPlayers');
+  var rp = document.getElementById('resultPlayers');
   rp.innerHTML = '';
-  G.players.forEach((p, i) => {
-    const voteTarget = G.votes[p.id] ? (pById(G.votes[p.id])?.name || '?') : '未投';
-    const myVotesReceived = Object.entries(G.votes).filter(([,v])=>v===p.id).map(([k])=>pById(k)?.name||'?');
-    const isTop = topIds.includes(p.id);
-    const div = document.createElement('div');
+  G.players.forEach(function(p, i) {
+    var voteTarget = G.votes[p.id] ? (pById(G.votes[p.id]) ? pById(G.votes[p.id]).name : '?') : '未投';
+    var myVotesReceived = Object.entries(G.votes).filter(function(e){return e[1]===p.id;}).map(function(e){return pById(e[0]) ? pById(e[0]).name : '?';});
+    var isTop = topIds.indexOf(p.id) >= 0;
+    var div = document.createElement('div');
     div.className = 'result-player' + (isTop?' most-voted':'') + (p.role==='thief'?' thief':'') + (p.isAccomplice?' accomplice':'');
     div.style.animationDelay = (i*0.15)+'s';
-    div.innerHTML = `
-      <span style="font-size:1.5rem;">${getEmoji(i)}</span>
-      <div style="flex:1;">
-        <div style="font-weight:600;">${p.name}${isTop?' ⬅️ 得票最多':''}</div>
-        <div style="font-size:0.78rem;color:var(--night-muted);">
-          投给: ${voteTarget} · 被投: ${counts[p.id]}票
-          ${myVotesReceived.length ? ' ← ' + myVotesReceived.join('、') : ''}
-        </div>
-      </div>`;
-    setTimeout(() => { div.classList.add('revealed'); rp.appendChild(div); }, i*150+100);
+    div.innerHTML = '<span style="font-size:1.5rem;">' + getEmoji(i) + '</span>' +
+      '<div style="flex:1;"><div style="font-weight:600;">' + p.name + (isTop?' ⬅️ 得票最多':'') + '</div>' +
+      '<div style="font-size:0.78rem;color:var(--night-muted);">投给: ' + voteTarget + ' · 被投: ' + counts[p.id] + '票' +
+      (myVotesReceived.length ? ' ← ' + myVotesReceived.join('、') : '') + '</div></div>';
+    setTimeout(function() { div.classList.add('revealed'); rp.appendChild(div); }, i*150+100);
   });
 
-  // Identity reveal
-  const rr = document.getElementById('resultRoles');
+  var rr = document.getElementById('resultRoles');
   rr.innerHTML = '';
-  setTimeout(() => {
-    G.players.forEach((p, i) => {
-      const div = document.createElement('div');
-      const bg = p.role==='thief'?'rgba(224,80,80,0.1)':p.isAccomplice?'rgba(249,115,22,0.1)':'transparent';
-      const tagCls = p.role==='thief'?'tag-thief':p.isAccomplice?'tag-accomplice':'tag-mouse';
-      const roleLabel = p.role==='thief'?'奶酪大盗':p.isAccomplice?'共犯':'嗜睡老鼠';
-      const roleEmoji = p.role==='thief'?'🦊':'🐭';
-      div.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;border:1px solid var(--night-border);background:${bg};`;
-      div.innerHTML = `<span style="font-size:1.5rem;">${roleEmoji}</span>
-        <div style="flex:1;font-weight:600;">${p.name}</div>
-        <div style="font-size:0.78rem;color:var(--night-muted);">骰子: ${p.dice}</div>
-        <span class="result-role-tag ${tagCls}">${roleLabel}</span>`;
+  setTimeout(function() {
+    G.players.forEach(function(p, i) {
+      var div = document.createElement('div');
+      var bg = p.role==='thief'?'rgba(224,80,80,0.1)':p.isAccomplice?'rgba(249,115,22,0.1)':'transparent';
+      var tagCls = p.role==='thief'?'tag-thief':p.isAccomplice?'tag-accomplice':'tag-mouse';
+      var roleLabel = p.role==='thief'?'奶酪大盗':p.isAccomplice?'共犯':'嗜睡老鼠';
+      var roleEmoji = p.role==='thief'?'🦊':'🐭';
+      div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;border:1px solid var(--night-border);background:' + bg + ';';
+      div.innerHTML = '<span style="font-size:1.5rem;">' + roleEmoji + '</span>' +
+        '<div style="flex:1;font-weight:600;">' + p.name + '</div>' +
+        '<div style="font-size:0.78rem;color:var(--night-muted);">骰子: ' + p.dice + '</div>' +
+        '<span class="result-role-tag ' + tagCls + '">' + roleLabel + '</span>';
       rr.appendChild(div);
     });
   }, G.players.length * 150 + 400);
 
   if (isHost) document.getElementById('resultHostControls').style.display = 'flex';
+
+  // Clear persisted state on game end
+  clearPersistedState();
 }
 
 function hostNewRound() {
   clearInterval(dayTimerInterval);
   G.phase = 'waiting';
-  G.players.forEach(p => { p.role=''; p.dice=0; p.isAccomplice=false; p.hasVoted=false; p.isConnected=true; });
+  G.players.forEach(function(p) { p.role=''; p.dice=0; p.isAccomplice=false; p.hasVoted=false; p.isConnected=true; });
   G.votes = {}; G.cheeseStolen = false; G.nightLog = []; G.currentNightNumber = 0;
   myRole = ''; myDice = 0; myIsAccomplice = false;
   document.body.classList.remove('day-mode');
+  clearPersistedState();
   hostBroadcast();
   renderPhase();
 }
@@ -1267,7 +1344,7 @@ function hostNewRound() {
 // RENDER
 // ======================================================================
 function renderPhase() {
-  const ph = G.phase;
+  var ph = G.phase;
   if (ph === 'waiting') { showPage('lobby'); renderLobby(); }
   else if (ph === 'dealing') { showPage('dealing'); renderDealing(); }
   else if (ph === 'night') { if (isHost) { showPage('night-console'); renderNightConsole(); } }
@@ -1277,28 +1354,31 @@ function renderPhase() {
 }
 
 function renderLobby() {
-  const list = document.getElementById('lobbyPlayerList');
+  var list = document.getElementById('lobbyPlayerList');
   list.innerHTML = '';
-  G.players.forEach((p,i) => {
-    const d = document.createElement('div');
+  G.players.forEach(function(p, i) {
+    var d = document.createElement('div');
     d.className = 'player-item'; d.dataset.id = p.id;
-    d.innerHTML = `<div class="player-avatar">${getEmoji(i)}</div>
-      <div class="player-name">${p.name}${p.id===myId?' (你)':''}</div>
-      ${i===0?'<span class="player-badge host">房主</span>':''}
-      ${!p.isConnected?'<span class="player-badge" style="color:#f87171;background:rgba(248,113,113,0.2);">断线</span>':''}`;
+    // Disconnected players shown in gray
+    var style = p.isConnected ? '' : 'opacity:0.5;';
+    d.style.cssText = style;
+    d.innerHTML = '<div class="player-avatar">' + getEmoji(i) + '</div>' +
+      '<div class="player-name">' + p.name + (p.id===myId?' (你)':'') + '</div>' +
+      (i===0?'<span class="player-badge host">房主</span>':'') +
+      (!p.isConnected?'<span class="player-badge" style="color:#f87171;background:rgba(248,113,113,0.2);">断线</span>':'');
     list.appendChild(d);
   });
-  const alive = G.players.filter(p=>p.isConnected).length;
+  var alive = G.players.filter(function(p){return p.isConnected;}).length;
   document.getElementById('playerCountBadge').textContent = alive + '/8人';
   if (isHost) updateStartBtn();
 }
 
 function updateStartBtn() {
-  const alive = G.players.filter(p=>p.isConnected).length;
-  const btn = document.getElementById('startBtn');
-  const hint = document.getElementById('startHint');
+  var alive = G.players.filter(function(p){return p.isConnected;}).length;
+  var btn = document.getElementById('startBtn');
+  var hint = document.getElementById('startHint');
   if (btn) btn.disabled = alive < 3;
-  if (hint) hint.textContent = alive < 3 ? `还需 ${3-alive} 名玩家` : `${alive} 名玩家就绪`;
+  if (hint) hint.textContent = alive < 3 ? '还需 ' + (3-alive) + ' 名玩家' : alive + ' 名玩家就绪';
 }
 
 function renderDealing() {
@@ -1319,33 +1399,33 @@ function renderDealing() {
 }
 
 function updateDiceStatus() {
-  const list = document.getElementById('diceStatusList');
+  var list = document.getElementById('diceStatusList');
   if (!list) return;
   list.innerHTML = '';
-  G.players.forEach((p,i) => {
-    const d = document.createElement('div');
+  G.players.forEach(function(p, i) {
+    var d = document.createElement('div');
     d.className = 'player-item';
-    d.innerHTML = `<div class="player-avatar">${getEmoji(i)}</div>
-      <div class="player-name">${p.name}</div>
-      <span class="player-badge ${p.dice>0?'ready':''}">${p.dice>0?'✅ 已摇':'⏳ 等待'}</span>`;
+    d.innerHTML = '<div class="player-avatar">' + getEmoji(i) + '</div>' +
+      '<div class="player-name">' + p.name + '</div>' +
+      '<span class="player-badge ' + (p.dice>0?'ready':'') + '">' + (p.dice>0?'✅ 已摇':'⏳ 等待') + '</span>';
     list.appendChild(d);
   });
-  const allDone = G.players.every(p=>p.dice>0);
-  const btn = document.getElementById('startNightBtn');
+  var allDone = G.players.every(function(p){return p.dice>0;});
+  var btn = document.getElementById('startNightBtn');
   if (btn) btn.disabled = !allDone;
-  const hint = document.getElementById('diceHintAll');
-  if (hint) hint.textContent = allDone ? '✅ 所有人已摇骰子！' : `还有 ${G.players.filter(p=>p.dice===0).length} 人未摇骰子…`;
+  var hint = document.getElementById('diceHintAll');
+  if (hint) hint.textContent = allDone ? '✅ 所有人已摇骰子！' : '还有 ' + G.players.filter(function(p){return p.dice===0;}).length + ' 人未摇骰子…';
 }
 
 function renderNightConsole() {
-  const prog = document.getElementById('nightProgress');
+  var prog = document.getElementById('nightProgress');
   if (prog) {
     prog.innerHTML = '';
-    for (let i=1;i<=6;i++) {
-      const d = document.createElement('div');
+    for (var i=1;i<=6;i++) {
+      var d = document.createElement('div');
       d.className = 'night-step'; d.id = 'ns-'+i; d.textContent = i;
-      const w = G.players.filter(p=>p.dice===i);
-      if (w.length) d.title = w.map(p=>p.name).join(', ');
+      var w = G.players.filter(function(p){return p.dice===i;});
+      if (w.length) d.title = w.map(function(p){return p.name;}).join(', ');
       prog.appendChild(d);
     }
   }
@@ -1354,38 +1434,38 @@ function renderNightConsole() {
 }
 
 function updateNightProgress(cur) {
-  for (let i=1;i<=6;i++) {
-    const el = document.getElementById('ns-'+i);
+  for (var i=1;i<=6;i++) {
+    var el = document.getElementById('ns-'+i);
     if (!el) continue;
     el.classList.remove('active','done');
     if (i < cur) el.classList.add('done');
     else if (i === cur) el.classList.add('active');
   }
   if (cur > 0) {
-    const n = document.getElementById('consoleCurrentNum');
+    var n = document.getElementById('consoleCurrentNum');
     if (n) n.textContent = cur;
   }
 }
 
 function updateConsoleInfo(num, waking) {
-  const el = document.getElementById('consoleWakingPlayers');
-  if (el) el.textContent = waking.length ? '醒来: ' + waking.map(p=>p.name).join('、') : '无人醒来';
+  var el = document.getElementById('consoleWakingPlayers');
+  if (el) el.textContent = waking.length ? '醒来: ' + waking.map(function(p){return p.name;}).join('、') : '无人醒来';
 }
 
 function renderDay() {
   document.getElementById('dayRoleEmoji').textContent = myRole==='thief'?'🦊':'🐭';
   document.getElementById('dayRoleName').textContent = myRole==='thief'?'奶酪大盗':myIsAccomplice?'嗜睡老鼠（共犯）':'嗜睡老鼠';
-  const desc = myRole==='thief'?'设法让别人替你背锅！':myIsAccomplice?'帮助大盗躲避追查！':'找出偷走奶酪的大盗！';
+  var desc = myRole==='thief'?'设法让别人替你背锅！':myIsAccomplice?'帮助大盗躲避追查！':'找出偷走奶酪的大盗！';
   document.getElementById('dayRoleDesc').textContent = desc;
   document.getElementById('dayMyDice').textContent = myDice || '?';
 
-  const list = document.getElementById('dayPlayerList');
+  var list = document.getElementById('dayPlayerList');
   list.innerHTML = '';
-  G.players.forEach((p,i) => {
-    const d = document.createElement('div');
+  G.players.forEach(function(p, i) {
+    var d = document.createElement('div');
     d.className = 'player-item';
-    d.innerHTML = `<div class="player-avatar">${getEmoji(i)}</div>
-      <div class="player-name">${p.name}${p.id===myId?' (你)':''}</div>`;
+    d.innerHTML = '<div class="player-avatar">' + getEmoji(i) + '</div>' +
+      '<div class="player-name">' + p.name + (p.id===myId?' (你)':'') + '</div>';
     list.appendChild(d);
   });
 
@@ -1397,18 +1477,20 @@ function renderDay() {
 }
 
 function renderVoting() {
-  const me = myPlayer();
-  const voted = me && me.hasVoted;
-  const opts = document.getElementById('voteOptions');
+  var me = myPlayer();
+  var voted = me && me.hasVoted;
+  var opts = document.getElementById('voteOptions');
   opts.innerHTML = '';
 
-  G.players.forEach((p,i) => {
-    const d = document.createElement('div');
+  G.players.forEach(function(p, i) {
+    var d = document.createElement('div');
     d.className = 'vote-option' + (p.id===myId?' self':'');
-    d.innerHTML = `<div class="vote-option-avatar">${getEmoji(i)}</div>
-      <div class="vote-option-name">${p.name}</div>
-      ${p.id===myId?'<div class="vote-count-badge">自己</div>':''}`;
-    if (p.id !== myId && !voted) d.onclick = () => castVote(p.id);
+    d.innerHTML = '<div class="vote-option-avatar">' + getEmoji(i) + '</div>' +
+      '<div class="vote-option-name">' + p.name + '</div>' +
+      (p.id===myId?'<div class="vote-count-badge">自己</div>':'');
+    if (p.id !== myId && !voted) {
+      (function(pid) { d.onclick = function() { castVote(pid); }; })(p.id);
+    }
     opts.appendChild(d);
   });
 
@@ -1428,10 +1510,10 @@ function renderVoting() {
 // IDENTITY CARD
 // ======================================================================
 function updateIdentityCard() {
-  const back = document.getElementById('cardBack');
-  const emoji = document.getElementById('cardRoleEmoji');
-  const name = document.getElementById('cardRoleName');
-  const hint = document.getElementById('cardHint');
+  var back = document.getElementById('cardBack');
+  var emoji = document.getElementById('cardRoleEmoji');
+  var name = document.getElementById('cardRoleName');
+  var hint = document.getElementById('cardHint');
   if (!myRole) return;
   if (myRole === 'thief') {
     back.className = 'card-back';
@@ -1451,7 +1533,7 @@ function flipIdentityCard() {
   document.getElementById('identityCard').classList.add('flipped');
   vibrate([50]);
   clearTimeout(identityFlipTimer);
-  identityFlipTimer = setTimeout(() => {
+  identityFlipTimer = setTimeout(function() {
     document.getElementById('identityCard').classList.remove('flipped');
     identityFlipped = false;
   }, 5000);
@@ -1462,15 +1544,15 @@ function flipIdentityCard() {
 // ======================================================================
 function rollDice() {
   if (myDice > 0) { showToast('已摇过，点数: ' + myDice, 'info'); return; }
-  const diceEl = document.getElementById('myDice');
+  var diceEl = document.getElementById('myDice');
   diceEl.classList.add('rolling');
   vibrate([100,50,100]);
-  let count = 0;
-  const anim = setInterval(() => {
+  var count = 0;
+  var anim = setInterval(function() {
     diceEl.dataset.value = Math.ceil(Math.random()*6);
     if (++count >= 10) {
       clearInterval(anim);
-      const val = Math.ceil(Math.random()*6);
+      var val = Math.ceil(Math.random()*6);
       myDice = val;
       diceEl.dataset.value = val;
       diceEl.classList.remove('rolling');
@@ -1479,8 +1561,8 @@ function rollDice() {
       document.getElementById('diceHint').textContent = '点数已确定，不可更改';
       showToast('你的骰子点数是 ' + val + '！', 'success');
       vibrate([100,30,200]);
-      const me = myPlayer(); if (me) me.dice = val;
-      if (isHost) { updateDiceStatus(); hostBroadcast(); }
+      var me = myPlayer(); if (me) me.dice = val;
+      if (isHost) { updateDiceStatus(); hostBroadcast(); persistState(); }
       else hostConn.send({type:'dice_roll', value:val});
     }
   }, 70);
@@ -1490,22 +1572,22 @@ function rollDice() {
 // QR / COPY
 // ======================================================================
 function buildQR() {
-  const c = document.getElementById('qrContainer');
+  var c = document.getElementById('qrContainer');
   c.innerHTML = '';
-  const base = location.href.replace('game.html','index.html').split('?')[0];
-  const url = base + '?room=' + roomCode;
+  var base = location.href.replace('game.html','index.html').split('?')[0];
+  var url = base + '?room=' + roomCode;
   try { new QRCode(c, {text:url, width:180, height:180, correctLevel:QRCode.CorrectLevel.M}); }
-  catch(e) { c.innerHTML = `<p style="color:#888;font-size:0.8rem;">${url}</p>`; }
+  catch(e) { c.innerHTML = '<p style="color:#888;font-size:0.8rem;">' + url + '</p>'; }
 }
 
 function toggleQR() { document.getElementById('qrContainer').classList.toggle('hidden'); }
 
 function copyRoomCode() {
-  const base = location.href.replace('game.html','index.html').split('?')[0];
-  const url = base + '?room=' + roomCode;
-  const text = `奶酪大盗邀请！\n房间码: ${roomCode}\n加入: ${url}`;
-  if (navigator.share) navigator.share({title:'奶酪大盗', text}).catch(()=>{});
-  else if (navigator.clipboard) navigator.clipboard.writeText(text).then(()=>showToast('已复制！','success'));
+  var base = location.href.replace('game.html','index.html').split('?')[0];
+  var url = base + '?room=' + roomCode;
+  var text = '奶酪大盗邀请！\n房间码: ' + roomCode + '\n加入: ' + url;
+  if (navigator.share) navigator.share({title:'奶酪大盗', text:text}).catch(function(){});
+  else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function(){showToast('已复制！','success');});
   else showToast('房间码: ' + roomCode, 'info');
 }
 
@@ -1526,27 +1608,39 @@ function leaveGame() {
     if (peer) peer.destroy();
     localStorage.removeItem('isHost');
     localStorage.removeItem('roomCode');
+    clearPersistedState();
     location.href = 'index.html';
   }
 }
 
 // ======================================================================
+// VISIBILITYCHANGE KEEPALIVE
+// ======================================================================
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) return;
+  // Page became visible again — check connection state
+  if (isHost) {
+    // Re-broadcast current state to all connected players
+    broadcastState();
+  } else {
+    // Check connection to host
+    if (!hostConn || hostConn.open === false) {
+      setTimeout(connectToHost, 1000);
+    }
+  }
+});
+
+// ======================================================================
 // BOOT
 // ======================================================================
-window.addEventListener('DOMContentLoaded', () => {
-  // Handle direct URL join
-  const params = new URLSearchParams(location.search);
-  const urlRoom = params.get('room');
+window.addEventListener('DOMContentLoaded', function() {
+  var params = new URLSearchParams(location.search);
+  var urlRoom = params.get('room');
   if (urlRoom && !isHost) {
     roomCode = urlRoom.toUpperCase();
     localStorage.setItem('roomCode', roomCode);
   }
 
-  if (!myName || myName === '玩家') {
-    // Still ok, player name might be set
-  }
-
-  // Show correct initial UI
   document.getElementById('lobbyRoomCode').textContent = roomCode || '------';
 
   if (isHost) {
@@ -1555,7 +1649,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!roomCode) { roomCode = "123"; localStorage.setItem("roomCode", roomCode); }
     initPeer(hostPeerId(roomCode));
   } else {
-    if (!roomCode) { showToast('没有房间码，请返回', 'error'); setTimeout(()=>location.href='index.html',2000); return; }
+    if (!roomCode) { showToast('没有房间码，请返回', 'error'); setTimeout(function(){location.href='index.html';},2000); return; }
     document.getElementById('hostControls').style.display = 'none';
     document.getElementById('guestWaiting').style.display = 'block';
     document.getElementById('lobbyRoomCode').textContent = roomCode;
