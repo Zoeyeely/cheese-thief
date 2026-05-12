@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>🧀 奶酪大盗</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .connecting-hint {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #aaa;
+      padding: 4px 0;
+    }
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 3px solid rgba(139,69,19,0.2);
+      border-top-color: var(--brown);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="page">
+
+    <!-- Hero -->
+    <div class="hero fade-in">
+      <div class="emoji-title">🧀🐭</div>
+      <h1>奶酪大盗</h1>
+      <p class="hero-sub">3-8人社交推理游戏</p>
+    </div>
+
+    <!-- Tabs: 创建 / 加入 -->
+    <div class="card fade-in" id="mainCard">
+      <div class="section-tabs">
+        <button class="tab-btn active" id="tabCreate" onclick="switchTab('create')">🏠 创建房间</button>
+        <button class="tab-btn" id="tabJoin" onclick="switchTab('join')">🚪 加入房间</button>
+      </div>
+
+      <!-- Create panel -->
+      <div class="tab-panel active" id="panelCreate">
+        <div class="input-group">
+          <label for="createNickname">你的昵称</label>
+          <input type="text" id="createNickname" maxlength="16" placeholder="起个好听的名字" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" id="btnCreate" onclick="createRoom()">
+          🎲 创建新房间
+        </button>
+        <p class="connecting-hint" id="createHint"></p>
+      </div>
+
+      <!-- Join panel -->
+      <div class="tab-panel" id="panelJoin">
+        <div class="input-group">
+          <label for="joinRoomId">房间号</label>
+          <input type="text" id="joinRoomId" maxlength="6" placeholder="输入6位房间号"
+            autocomplete="off" autocapitalize="characters"
+            style="letter-spacing:6px;font-family:monospace;font-size:1.3rem;text-align:center">
+        </div>
+        <div class="input-group">
+          <label for="joinNickname">你的昵称</label>
+          <input type="text" id="joinNickname" maxlength="16" placeholder="起个好听的名字" autocomplete="off">
+        </div>
+        <button class="btn btn-brown" id="btnJoin" onclick="joinRoom()">
+          🚪 进入房间
+        </button>
+        <p class="connecting-hint" id="joinHint"></p>
+      </div>
+    </div>
+
+    <!-- After room created: show QR + enter button -->
+    <div class="created-panel" id="createdPanel">
+      <div class="card">
+        <div class="card-title">🎉 房间创建成功！</div>
+        <div class="qr-section">
+          <div class="room-id-display" id="displayRoomId">------</div>
+          <div id="qrcode"></div>
+          <p class="qr-hint">截图分享房间号，或扫码直接加入</p>
+        </div>
+        <div class="mt-16">
+          <button class="btn btn-primary" onclick="enterRoom()">
+            ▶️ 进入房间等待室
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rules card -->
+    <div class="card fade-in">
+      <div class="card-title">📜 游戏规则</div>
+      <ul class="rules-list">
+        <li><span class="rule-num">1</span><span>3-8人参与，其中1人是<strong>奶酪大盗</strong>，其余是<strong>贪睡鼠</strong></span></li>
+        <li><span class="rule-num">2</span><span>每人查看自己的身份牌（仅自己可见）</span></li>
+        <li><span class="rule-num">3</span><span>天黑后贪睡鼠闭眼，大盗趁机偷走奶酪指示物</span></li>
+        <li><span class="rule-num">4</span><span>天亮后所有人讨论，推理谁是大盗</span></li>
+        <li><span class="rule-num">5</span><span>投票将嫌疑人出局；大盗被投出则贡献方获胜，否则大盗胜！</span></li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- QRCode.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- PeerJS CDN -->
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+<script>
+// ── Utilities ────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (type ? ' toast-' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 3000);
+}
+
+function setHint(elId, msg) {
+  const el = document.getElementById(elId);
+  if (el) el.innerHTML = msg;
+}
+
+function generateRoomId() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let id = '';
+  for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+// ── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('tabCreate').classList.toggle('active', tab === 'create');
+  document.getElementById('tabJoin').classList.toggle('active', tab === 'join');
+  document.getElementById('panelCreate').classList.toggle('active', tab === 'create');
+  document.getElementById('panelJoin').classList.toggle('active', tab === 'join');
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+let createdRoomId = null;
+let createdNickname = null;
+let qrInstance = null;
+let peer = null;
+
+// ── Create Room ──────────────────────────────────────────────────────────────
+function createRoom() {
+  const nickname = document.getElementById('createNickname').value.trim();
+  if (!nickname) { showToast('请先输入昵称', 'error'); return; }
+
+  const btn = document.getElementById('btnCreate');
+  btn.disabled = true;
+  setHint('createHint', '<span class="spinner"></span>正在初始化连接...');
+
+  const roomId = generateRoomId();
+
+  // Create PeerJS peer with roomId as the peer ID
+  if (peer) { try { peer.destroy(); } catch(e) {} }
+
+  peer = new Peer(roomId, {
+    debug: 0
+  });
+
+  peer.on('open', (id) => {
+    createdRoomId = id;
+    createdNickname = nickname;
+
+    // Save to sessionStorage
+    sessionStorage.setItem('roomId', createdRoomId);
+    sessionStorage.setItem('nickname', createdNickname);
+    sessionStorage.setItem('isHost', 'true');
+
+    // Show created panel
+    document.getElementById('mainCard').style.display = 'none';
+    document.getElementById('createdPanel').classList.add('active');
+    document.getElementById('displayRoomId').textContent = createdRoomId;
+
+    // Generate QR code
+    const joinUrl = `${location.origin}${location.pathname}?room=${createdRoomId}`;
+    if (qrInstance) {
+      qrInstance.clear();
+      qrInstance.makeCode(joinUrl);
+    } else {
+      qrInstance = new QRCode(document.getElementById('qrcode'), {
+        text: joinUrl,
+        width: 160,
+        height: 160,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    setHint('createHint', '');
+    btn.disabled = false;
+    showToast(`房间 ${createdRoomId} 创建成功！`, 'success');
+
+    // Destroy peer after getting ID — game.html will create it fresh
+    peer.destroy();
+    peer = null;
+  });
+
+  peer.on('error', (err) => {
+    console.error('Peer error:', err);
+    btn.disabled = false;
+    setHint('createHint', '');
+    if (err.type === 'unavailable-id') {
+      // Try again with new ID
+      showToast('房间号冲突，重新生成...', '');
+      setTimeout(createRoom, 500);
+    } else {
+      showToast('连接失败: ' + (err.message || err.type), 'error');
+    }
+  });
+}
+
+// ── Join Room ─────────────────────────────────────────────────────────────────
+function joinRoom() {
+  const roomId = document.getElementById('joinRoomId').value.trim().toUpperCase();
+  const nickname = document.getElementById('joinNickname').value.trim();
+  if (!roomId) { showToast('请输入房间号', 'error'); return; }
+  if (!nickname) { showToast('请先输入昵称', 'error'); return; }
+  if (roomId.length !== 6) { showToast('房间号为6位', 'error'); return; }
+
+  sessionStorage.setItem('roomId', roomId);
+  sessionStorage.setItem('nickname', nickname);
+  sessionStorage.setItem('isHost', 'false');
+
+  window.location.href = `game.html?room=${roomId}`;
+}
+
+// ── Enter room after creating ─────────────────────────────────────────────────
+function enterRoom() {
+  window.location.href = `game.html?room=${createdRoomId}`;
+}
+
+// ── Pre-fill from URL ─────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(location.search);
+  const roomParam = params.get('room');
+  if (roomParam) {
+    switchTab('join');
+    document.getElementById('joinRoomId').value = roomParam.toUpperCase();
+    document.getElementById('joinNickname').focus();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const active = document.querySelector('.tab-btn.active');
+      if (active?.id === 'tabCreate') createRoom();
+      else joinRoom();
+    }
+  });
+});
+</script>
+</body>
+</html>
