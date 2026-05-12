@@ -4,972 +4,1563 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>🧀 奶酪大盗 - 游戏房间</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>🧀 奶酪大盗</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    .day-controls { display: flex; flex-direction: column; gap: 12px; }
-    .status-connecting { text-align: center; padding: 24px; color: #888; }
-    .spinner {
-      display: inline-block; width: 24px; height: 24px;
-      border: 3px solid rgba(139,69,19,0.2); border-top-color: var(--brown);
-      border-radius: 50%; animation: spin 0.8s linear infinite;
-      vertical-align: middle; margin-right: 8px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
 
-<!-- Header -->
-<div class="room-header">
-  <div style="display:flex;align-items:center;gap:8px;">
-    <span class="live-dot" id="liveDot" style="background:#e74c3c"></span>
-    <span class="room-id-small" id="headerRoomId">------</span>
-  </div>
-  <span id="headerPhaseBadge" class="phase-badge waiting">连接中</span>
-  <span id="headerNickname" style="font-size:0.85rem;font-weight:600;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#888"></span>
-</div>
-
-<div class="room-content" id="roomContent">
-
-  <!-- WAITING -->
-  <div class="phase-section active" id="phaseWaiting">
-    <div class="card" id="connectingCard">
-      <div class="status-connecting"><span class="spinner"></span>正在连接...</div>
-    </div>
-    <div class="card" id="playersCard" style="display:none">
-      <div class="card-title">👥 等待玩家加入</div>
-      <ul class="player-list scroll-list" id="waitingPlayerList"></ul>
-      <p class="player-count-hint mt-8" id="playerCountHint">还需至少3人</p>
-    </div>
-    <div class="card" id="hostWaitControls" style="display:none">
-      <div class="card-title">🎮 房主操作</div>
-      <div class="host-controls">
-        <button class="btn btn-primary" id="btnStartGame" onclick="startGame()" disabled>🎲 开始游戏</button>
-        <div class="host-label">需要3-8名玩家才能开始</div>
-      </div>
-    </div>
-    <div class="card" id="inviteCard" style="display:none">
-      <div class="card-title">📤 邀请好友</div>
-      <div class="qr-section" style="padding:12px">
-        <div class="room-id-display" id="waitingRoomId" style="font-size:2rem;letter-spacing:6px">------</div>
-        <div id="waitingQrcode" style="margin:8px 0"></div>
-        <p class="qr-hint">分享房间号或扫码加入</p>
-        <button class="btn btn-ghost btn-sm" onclick="copyRoomLink()" style="margin-top:4px">📋 复制邀请链接</button>
-      </div>
+  <!-- Night Overlay (shown to all players at night) -->
+  <div class="night-overlay hidden" id="nightOverlay">
+    <div class="night-stars">✦ ✦ ✦ ✦ ✦</div>
+    <div class="night-message" id="nightMsg">闭上眼睛…</div>
+    <div id="wakeContent"></div>
+    <div id="nightTimerWrap" class="hidden" style="position:relative;width:60px;height:60px;">
+      <svg class="timer-ring" viewBox="0 0 60 60" style="width:60px;height:60px;">
+        <circle class="timer-ring-bg" cx="30" cy="30" r="26"/>
+        <circle class="timer-ring-progress" id="timerRing" cx="30" cy="30" r="26"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:var(--night-accent);" id="timerNum">10</div>
     </div>
   </div>
 
-  <!-- DEALING -->
-  <div class="phase-section" id="phaseDealing">
-    <div class="card">
-      <div class="card-title">🃏 身份发牌</div>
-      <p class="dealing-instruction" id="dealingInstruction">点击卡牌查看你的身份（仅你可见）</p>
-    </div>
-    <div class="dealing-wrapper">
-      <div class="flip-container" id="flipContainer" onclick="flipCard()">
-        <div class="flip-card" id="flipCard">
-          <div class="flip-front">
-            <div class="card-pattern">🧀</div>
-            <div class="card-label">点击查看<br>你的身份</div>
-          </div>
-          <div class="flip-back" id="flipBack">
-            <div class="role-icon" id="roleIcon">🐭</div>
-            <div class="role-name" id="roleName">贪睡鼠</div>
-            <div class="role-desc" id="roleDesc">保持警惕，找出大盗！</div>
-          </div>
+  <div class="container">
+
+    <!-- ==================== LOBBY ==================== -->
+    <div id="page-lobby" class="page active">
+      <div class="status-bar">
+        <div class="status-dot connecting" id="connDot"></div>
+        <span id="connStatus">连接中…</span>
+      </div>
+
+      <div class="card room-code-display">
+        <div style="font-size:0.8rem;color:var(--night-muted);margin-bottom:4px;">房间码</div>
+        <div class="room-code" id="lobbyRoomCode">------</div>
+        <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
+          <button class="btn btn-sm btn-muted" onclick="copyRoomCode()">📋 复制</button>
+          <button class="btn btn-sm btn-muted" onclick="toggleQR()">📷 二维码</button>
         </div>
+        <div id="qrContainer" class="qr-wrapper hidden"></div>
       </div>
-      <p class="card-timer" id="cardTimer" style="display:none">⏳ <span id="cardCountdown">5</span>秒后自动隐藏</p>
-    </div>
-    <div id="hostDealingControls" style="display:none">
+
       <div class="card">
-        <div class="host-controls">
-          <button class="btn btn-brown" onclick="proceedToNight()">🌙 所有人确认完毕，进入天黑</button>
-          <div class="host-label">确保所有人都查看过自己的身份牌</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3>玩家列表</h3>
+          <span id="playerCountBadge" style="font-size:0.85rem;color:var(--night-muted);">0/8人</span>
         </div>
+        <div class="player-list" id="lobbyPlayerList"></div>
       </div>
-    </div>
-  </div>
 
-  <!-- NIGHT -->
-  <div class="phase-section" id="phaseNight">
-    <div class="night-overlay">
-      <span class="moon-emoji">🌙</span>
-      <div class="night-title">天黑了</div>
-      <p style="opacity:0.75;margin-top:4px;font-size:0.95rem" id="nightRoleHint">贪睡鼠请闭眼...</p>
-    </div>
-    <div class="card">
-      <div class="card-title">🎲 骰子</div>
-      <div class="dice-container">
-        <div class="dice" id="dice"></div>
-        <div id="diceValueDisplay" class="dice-value-display" style="display:none"></div>
-      </div>
-      <div class="night-actions" style="margin-top:12px">
-        <div id="hostNightRollControls" style="display:none">
-          <button class="btn btn-primary" id="btnRollDice" onclick="rollDice()">🎲 掷骰子决定静眠时间</button>
+      <div id="hostControls" style="display:none;flex-direction:column;gap:10px;">
+        <div class="card" style="display:flex;flex-direction:column;gap:10px;">
+          <h3>⚙️ 游戏设置</h3>
+          <div class="info-row">
+            <span class="info-label">讨论时间（秒）</span>
+            <input type="number" id="discussionTime" value="300" min="60" max="600"
+              style="width:80px;text-align:center;">
+          </div>
         </div>
-        <div id="countdownWrapper" class="countdown-wrapper" style="display:none">
-          <p class="sleep-hint" id="sleepHintText">贡献方静眠倒计时</p>
-          <div class="countdown" id="countdown">--</div>
-          <div id="hostNightEndControls" style="display:none">
-            <button class="btn btn-success btn-sm" onclick="endNight()">☀️ 跳过倒计时，天亮</button>
+        <button class="btn btn-primary" id="startBtn" onclick="hostStartGame()">🎮 开始游戏</button>
+        <p id="startHint" class="text-center font-sm text-muted"></p>
+      </div>
+
+      <div id="guestWaiting" style="display:none;">
+        <div class="card text-center" style="gap:12px;display:flex;flex-direction:column;align-items:center;">
+          <div class="spinner"></div>
+          <p class="text-muted">等待房主开始游戏…</p>
+        </div>
+      </div>
+
+      <button class="btn btn-muted" onclick="leaveGame()" style="margin-top:auto;">🚪 离开房间</button>
+    </div>
+
+    <!-- ==================== DEALING ==================== -->
+    <div id="page-dealing" class="page">
+      <div class="phase-header">
+        <span class="phase-header-icon">🃏</span>
+        <span class="phase-header-text">查看身份 &amp; 摇骰子</span>
+      </div>
+
+      <div class="card text-center" style="gap:6px;">
+        <p class="text-muted font-sm">点击卡牌查看身份，5秒后自动盖回</p>
+        <p style="font-size:0.82rem;color:#f87171;">⚠️ 注意不要让他人看到！</p>
+      </div>
+
+      <div class="identity-section" onclick="flipIdentityCard()">
+        <div class="identity-card" id="identityCard">
+          <div class="card-front">
+            <div class="card-front-text">点击查看身份</div>
+          </div>
+          <div class="card-back" id="cardBack">
+            <div class="card-role-emoji" id="cardRoleEmoji">❓</div>
+            <div class="card-role-name" id="cardRoleName">-</div>
+            <div class="card-hint" id="cardHint"></div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="card" id="thiefHintCard" style="display:none;background:linear-gradient(135deg,#2c3e50,#8B4513);color:#fff;border:none">
-      <div class="card-title" style="color:#F5C518">🔓 大盗行动！</div>
-      <p style="font-size:0.95rem;line-height:1.6;opacity:0.9">趁贪睡鼠们闭眼，现在可以偷走奶酪指示物啦！<br><strong>记住你偷了哪块！</strong></p>
-    </div>
-  </div>
 
-  <!-- DAY -->
-  <div class="phase-section" id="phaseDay">
-    <div class="card">
-      <span style="font-size:2.5rem;display:block;text-align:center">☀️</span>
-      <div class="night-title" style="color:var(--brown-dark);text-align:center;font-size:1.6rem;margin-top:4px">天亮了！开始讨论</div>
-    </div>
-    <div class="card">
-      <div class="card-title">📋 本局信息</div>
-      <div class="info-row"><span class="info-label">玩家数量</span><span class="info-value" id="dayPlayerCount">-</span></div>
-      <div class="info-row"><span class="info-label">睡眠时长</span><span class="info-value" id="daySleepInfo">-</span></div>
-      <div class="info-row"><span class="info-label">你的身份</span><span class="info-value" id="dayMyRole">-</span></div>
-    </div>
-    <div class="card" id="dayTimerCard">
-      <div class="card-title">⏱️ 讨论计时（可选）</div>
-      <div class="day-controls">
-        <div style="display:flex;gap:8px;align-items:center">
-          <input class="timer-input" type="number" id="discussMinutes" value="3" min="1" max="30">
-          <span style="font-size:0.9rem;color:#666">分钟</span>
-          <button class="btn btn-ghost btn-sm" style="flex:1" id="btnDiscussTimer" onclick="toggleDiscussTimer()">▶️ 开始计时</button>
+      <div class="card" id="diceSection">
+        <h3 style="margin-bottom:12px;text-align:center;">🎲 摇骰子</h3>
+        <p class="text-muted font-sm text-center" style="margin-bottom:16px;">点数只有你自己可见</p>
+        <div class="dice-section">
+          <div class="dice" id="myDice" onclick="rollDice()" data-value="0">
+            <div class="dice-dots">
+              <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+              <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+              <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+          </div>
+          <p class="text-muted font-sm" id="diceHint">点击骰子来摇</p>
+          <div id="myDiceValue" style="font-size:1.5rem;font-weight:900;color:var(--night-accent);display:none;">
+            点数：<span id="diceValueText">?</span>
+          </div>
         </div>
-        <div class="day-timer" id="dayTimerDisplay" style="display:none">3:00</div>
+      </div>
+
+      <div id="dealingHostControls" style="display:none;flex-direction:column;gap:8px;">
+        <div class="card">
+          <h3 style="margin-bottom:10px;">玩家摇骰状态</h3>
+          <div id="diceStatusList" class="player-list"></div>
+        </div>
+        <button class="btn btn-primary" id="startNightBtn" onclick="hostStartNight()" disabled>🌙 开始夜晚阶段</button>
+        <p class="text-center font-sm text-muted" id="diceHintAll">等待所有人摇骰子…</p>
+      </div>
+
+      <div id="dealingGuestWaiting" style="display:none;">
+        <div class="card text-center" style="padding:16px;">
+          <p class="text-muted">等待所有人摇骰子，房主将开始夜晚阶段…</p>
+        </div>
       </div>
     </div>
-    <div id="hostDayControls" style="display:none">
+
+    <!-- ==================== NIGHT CONSOLE (Host) ==================== -->
+    <div id="page-night-console" class="page">
+      <div class="phase-header">
+        <span class="phase-header-icon">🌙</span>
+        <span class="phase-header-text">夜晚控制台</span>
+      </div>
+
+      <div class="card night-console">
+        <h3 style="margin-bottom:12px;text-align:center;">点数进度</h3>
+        <div class="night-progress" id="nightProgress"></div>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;align-items:center;">
+        <div class="night-number-indicator">
+          <span class="night-number-label">当前点数</span>
+          <span class="night-number-value" id="consoleCurrentNum">-</span>
+        </div>
+        <div id="consoleWakingPlayers" style="font-size:0.9rem;color:var(--night-muted);text-align:center;"></div>
+        <div style="position:relative;width:60px;height:60px;">
+          <svg viewBox="0 0 60 60" style="width:60px;height:60px;">
+            <circle class="timer-ring-bg" cx="30" cy="30" r="26"/>
+            <circle class="timer-ring-progress" id="consoleTimerRing" cx="30" cy="30" r="26"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:var(--night-accent);" id="consoleTimerNum">10</div>
+        </div>
+      </div>
+
+      <div class="card scrollable" style="max-height:180px;">
+        <h3 style="margin-bottom:8px;">📝 夜晚日志</h3>
+        <div id="nightLogList" style="font-size:0.82rem;color:var(--night-muted);display:flex;flex-direction:column;gap:4px;"></div>
+      </div>
+
+      <div id="accompliceSection" style="display:none;flex-direction:column;gap:12px;" class="card">
+        <h3 id="accompliceTitle">🤝 选择共犯</h3>
+        <p class="text-muted font-sm" id="accompliceDesc"></p>
+        <div id="accomplicePlayerList" class="player-select-list"></div>
+        <button class="btn btn-primary" id="accompliceConfirmBtn" onclick="confirmAccompliceSelection()" disabled>确认选择</button>
+      </div>
+
+      <button id="skipNightBtn" class="btn btn-muted hidden" onclick="hostSkipToDay()">⏭️ 跳过剩余夜晚</button>
+    </div>
+
+    <!-- ==================== ACCOMPLICE NOTIFY (Guest) ==================== -->
+    <div id="page-accomplice-notify" class="page">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:20px;">
+        <div style="font-size:4rem;animation:pulse 1s ease infinite;">🤝</div>
+        <h2 id="accompliceNotifyTitle">你成为了共犯！</h2>
+        <p class="text-muted" id="accompliceNotifyDesc"></p>
+        <button class="btn btn-primary" onclick="guestAcknowledgeAccomplice()">我知道了（闭眼）</button>
+      </div>
+    </div>
+
+    <!-- ==================== DAY ==================== -->
+    <div id="page-day" class="page">
+      <div class="phase-header">
+        <span class="phase-header-icon">☀️</span>
+        <span class="phase-header-text">白天讨论阶段</span>
+      </div>
+
+      <div class="card countdown-display">
+        <span style="font-size:1.5rem;">⏱️</span>
+        <span class="countdown-time" id="dayCountdown">05:00</span>
+        <div id="hostDayBtns" style="display:none;flex-direction:column;gap:4px;">
+          <button class="btn btn-sm btn-muted" onclick="pauseResumeDayTimer()" id="pauseBtn">⏸ 暂停</button>
+        </div>
+      </div>
+
       <div class="card">
-        <div class="host-controls">
-          <button class="btn btn-danger" onclick="startVote()">🗳️ 讨论结束，开始投票</button>
+        <h3 style="margin-bottom:10px;">你的信息</h3>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;">
+          <span style="font-size:2rem;" id="dayRoleEmoji">?</span>
+          <div>
+            <div style="font-weight:700;" id="dayRoleName">-</div>
+            <div style="font-size:0.82rem;color:var(--night-muted);" id="dayRoleDesc">-</div>
+          </div>
+        </div>
+        <hr class="divider">
+        <div class="info-row" style="margin-top:8px;">
+          <span class="info-label">你的骰子点数</span>
+          <span class="info-value text-accent" id="dayMyDice">?</span>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- VOTING -->
-  <div class="phase-section" id="phaseVoting">
-    <div class="card">
-      <div class="card-title">🗳️ 投票时间</div>
-      <p style="font-size:0.95rem;color:#666" id="votingInstruction">点击你认为是奶酪大盗的玩家</p>
-    </div>
-    <div class="card">
-      <div class="card-title">选择嫌疑人</div>
-      <div class="vote-grid" id="voteGrid"></div>
-    </div>
-    <div class="card" id="voteWaitCard" style="display:none">
-      <div style="text-align:center;padding:16px;font-size:1rem;color:#888">✅ 投票完成，等待其他人...</div>
-    </div>
-    <div class="card">
-      <div class="card-title">📊 投票进度</div>
-      <ul class="player-list" id="voteProgressList"></ul>
-    </div>
-  </div>
+      <div class="card">
+        <h3 style="margin-bottom:10px;">所有玩家</h3>
+        <div class="player-list" id="dayPlayerList"></div>
+      </div>
 
-  <!-- RESULT -->
-  <div class="phase-section" id="phaseResult">
-    <div class="result-banner" id="resultBanner">
-      <span class="result-icon" id="resultIcon">🏆</span>
-      <div class="result-title" id="resultTitle">结果</div>
-      <div class="result-subtitle" id="resultSubtitle"></div>
+      <div id="dayHostControls" style="display:none;margin-top:auto;">
+        <button class="btn btn-primary" onclick="hostStartVoting()">🗳️ 进入投票</button>
+      </div>
     </div>
-    <div class="card">
-      <div class="card-title">🔍 揭晓身份</div>
-      <div class="reveal-thief">
-        <span style="font-size:1.5rem">🧀</span>
-        <div>
-          <div style="font-size:0.85rem;color:#888">奶酪大盗是</div>
-          <div style="font-size:1.2rem;font-weight:800;color:var(--brown-dark)" id="revealThiefName">-</div>
+
+    <!-- ==================== VOTING ==================== -->
+    <div id="page-voting" class="page">
+      <div class="phase-header">
+        <span class="phase-header-icon">🗳️</span>
+        <span class="phase-header-text">投票阶段</span>
+      </div>
+
+      <div class="card">
+        <div class="info-row">
+          <span class="info-label">投票进度</span>
+          <span class="info-value" id="voteProgressText">0/0 人已投票</span>
+        </div>
+        <div style="margin-top:8px;height:4px;background:var(--night-border);border-radius:2px;overflow:hidden;">
+          <div id="voteProgressBar" style="height:100%;background:var(--night-accent);border-radius:2px;transition:width 0.3s ease;width:0%;"></div>
         </div>
       </div>
-      <div style="margin-top:12px" id="eliminatedInfo"></div>
+
+      <div class="card" id="myVoteCard">
+        <h3 style="margin-bottom:4px;">你怀疑谁？</h3>
+        <p class="text-muted font-sm" style="margin-bottom:12px;">选择你认为是奶酪大盗的玩家</p>
+        <div class="vote-grid" id="voteOptions"></div>
+      </div>
+
+      <div id="voteSubmitted" style="display:none;" class="card text-center">
+        <div style="font-size:2rem;margin-bottom:8px;">✅</div>
+        <p style="font-weight:600;">已投票！等待其他人…</p>
+        <p class="text-muted font-sm" id="voteWaitingText" style="margin-top:4px;"></p>
+      </div>
+
+      <div id="votingHostReveal" style="display:none;margin-top:auto;">
+        <button class="btn btn-primary" onclick="hostRevealVotes()">🎭 揭晓投票结果</button>
+        <p class="text-center font-sm text-muted" style="margin-top:8px;" id="revealHint"></p>
+      </div>
     </div>
-    <div class="card">
-      <div class="card-title">📊 投票结果</div>
-      <div class="vote-tally" id="voteTally"></div>
+
+    <!-- ==================== RESULT ==================== -->
+    <div id="page-result" class="page">
+      <div id="winBanner" style="display:none;"></div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;">🗳️ 投票结果</h3>
+        <div id="resultPlayers" class="result-players"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:10px;">🧀 身份揭晓</h3>
+        <div id="resultRoles" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+      <div id="resultHostControls" style="display:none;flex-direction:column;gap:8px;">
+        <button class="btn btn-primary" onclick="hostNewRound()">🔄 再来一局</button>
+      </div>
+      <button class="btn btn-muted" onclick="leaveGame()">🚪 返回大厅</button>
     </div>
-    <div id="hostResultControls" style="display:none">
-      <button class="btn btn-primary" onclick="restartGame()">🔄 再来一局</button>
-    </div>
-    <div id="guestResultWait" style="display:none;text-align:center;font-size:0.9rem;color:#888;padding:8px">等待房主开启下一局...</div>
-  </div>
 
-</div><!-- /room-content -->
-
-<!-- Overlay -->
-<div id="connectingOverlay">
-  <div class="disc-icon">📡</div>
-  <div class="disc-msg" id="overlayMsg">正在连接房间...</div>
-  <div class="disc-sub" id="overlaySub">请稍候</div>
-  <button class="btn btn-ghost btn-sm" style="width:auto;padding:12px 24px;margin-top:12px;color:#fff;border-color:#fff" onclick="location.href='index.html'">← 返回首页</button>
-</div>
-
-<div id="toast"></div>
-
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  </div><!-- /container -->
 
 <script>
-// ── Constants ────────────────────────────────────────────────────────────────
-const params   = new URLSearchParams(location.search);
-const ROOM_ID  = (params.get('room') || sessionStorage.getItem('roomId') || '').toUpperCase();
-const NICKNAME = sessionStorage.getItem('nickname') || '';
-const IS_HOST  = sessionStorage.getItem('isHost') === 'true';
-
-const EMOJIS = ['🐭','🐱','🐹','🐰','🦊','🐻','🐼','🐸'];
-const PHASE_LABELS = { waiting:'等待中', dealing:'发牌', night:'🌙天黑', day:'☀️讨论', voting:'投票', result:'结果' };
-const DICE_LAYOUTS = {
-  1:[[2,2]], 2:[[1,1],[3,3]], 3:[[1,1],[2,2],[3,3]],
-  4:[[1,1],[1,3],[3,1],[3,3]], 5:[[1,1],[1,3],[2,2],[3,1],[3,3]],
-  6:[[1,1],[1,3],[2,1],[2,3],[3,1],[3,3]]
+// ======================================================================
+// CONFIG
+// ======================================================================
+const CIRCUMFERENCE = 2 * Math.PI * 26; // ~163.4
+const PLAYER_EMOJIS = ['🐭','🐹','🦊','🐰','🐻','🐼','🐨','🐯'];
+const PEER_CONFIG = {
+  debug: 0,
+  config: { iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ]}
 };
 
-// ── State ────────────────────────────────────────────────────────────────────
-let gameState = { phase:'waiting', players:[], hostId:null, diceValue:null, diceSeconds:null, result:null };
-let myPeerId    = null;
-let myRole      = null;
-let hasVoted    = false;
-let cardFlipped = false;
+// ======================================================================
+// STATE
+// ======================================================================
+let peer = null;
+let myId = '';
+const myName = (localStorage.getItem('playerName') || '玩家').trim();
+const isHost = localStorage.getItem('isHost') === 'true';
+let roomCode = localStorage.getItem('roomCode') || '';
 
-// PeerJS
-let peer        = null;
-let hostConn    = null;
-let guestConns  = {};   // peerId → DataConnection (host only)
-let roleMap     = {};   // peerId → 'thief'|'sleeper' (host only)
-let voteTargets = {};   // peerId → targetId (host only)
+// Host only: map peerId -> DataConnection
+const connections = {};
 
-// Timers
-let cardCountdownTimer = null;
-let diceCountdownTimer = null;
-let discussInterval    = null;
-let discussRunning     = false;
-let discussSeconds     = 0;
-let waitingQrDone      = false;
+// Guest only: connection to host
+let hostConn = null;
 
-// ── Toast ────────────────────────────────────────────────────────────────────
-let _toastTimer = null;
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
+// Authoritative game state (host maintains; guests receive via state_sync)
+let G = {
+  phase: 'waiting',      // waiting | dealing | night | day | voting | result
+  players: [],           // [{id, name, role, dice, isAccomplice, hasVoted, isConnected}]
+  currentNightNumber: 0,
+  cheeseStolen: false,
+  votes: {},             // voterId -> targetId
+  round: 0,
+  discussionSeconds: 300,
+  thiefId: '',
+  accompliceCount: 0,
+  accompliceAckCount: 0,
+  nightLog: []
+};
+
+// Local player state (some not in G to keep private)
+let myRole = '';
+let myDice = 0;
+let myIsAccomplice = false;
+let identityFlipped = false;
+let identityFlipTimer = null;
+let dayTimerInterval = null;
+let dayTimerPaused = false;
+let dayTimeLeft = 300;
+let nightRunning = false;
+
+// Night promise resolver (host)
+let nightAccompliceResolve = null;
+let nightCurrentInterval = null;
+
+// Guest accomplice selection state
+let guestAccompliceSelected = new Set();
+let guestAccompliceRequired = 0;
+
+// Host accomplice selection state
+let hostAccompliceSelected = new Set();
+
+// ======================================================================
+// UTILITIES
+// ======================================================================
+function showToast(msg, type = 'info', ms = 3000) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
   t.textContent = msg;
-  t.className = 'show' + (type ? ' toast-'+type : '');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => { t.className = ''; }, 3200);
+  c.appendChild(t);
+  setTimeout(() => { if (t.parentNode) t.remove(); }, ms + 200);
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function vibrate(pat) { try { navigator.vibrate && navigator.vibrate(pat); } catch(e) {} }
+
+function uid6() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6}, () => c[Math.floor(Math.random()*c.length)]).join('');
 }
 
-// ── Overlay ───────────────────────────────────────────────────────────────────
-function showOverlay(msg, sub) {
-  document.getElementById('connectingOverlay').classList.add('show');
-  if (msg !== undefined) document.getElementById('overlayMsg').textContent = msg;
-  if (sub !== undefined) document.getElementById('overlaySub').textContent = sub;
-}
-function hideOverlay() { document.getElementById('connectingOverlay').classList.remove('show'); }
-function setLiveDot(on) { document.getElementById('liveDot').style.background = on ? '#27ae60' : '#e74c3c'; }
+function hostPeerId(code) { return 'ct2-' + code.toLowerCase() + '-host'; }
 
-// ── Header ────────────────────────────────────────────────────────────────────
-function updateHeader() {
-  document.getElementById('headerRoomId').textContent = ROOM_ID;
-  document.getElementById('headerNickname').textContent = NICKNAME;
-  const b = document.getElementById('headerPhaseBadge');
-  b.textContent = PHASE_LABELS[gameState.phase] || gameState.phase;
-  b.className = 'phase-badge ' + gameState.phase;
+function getEmoji(idx) { return PLAYER_EMOJIS[idx % PLAYER_EMOJIS.length]; }
+
+function pById(id) { return G.players.find(p => p.id === id); }
+function myPlayer() { return pById(myId); }
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('page-' + name);
+  if (el) el.classList.add('active');
+  window.scrollTo(0, 0);
 }
 
-// ── Messaging ─────────────────────────────────────────────────────────────────
-function hostBroadcast(type, data) {
-  const msg = JSON.stringify({type, data});
-  Object.values(guestConns).forEach(c => { try { if(c.open) c.send(msg); } catch(e){} });
-}
-function hostSend(peerId, type, data) {
-  const c = guestConns[peerId];
-  if(c && c.open) { try { c.send(JSON.stringify({type, data})); } catch(e){} }
-}
-function guestSend(type, data) {
-  if(hostConn && hostConn.open) { try { hostConn.send(JSON.stringify({type, data})); } catch(e){} }
+function setConnStatus(ok, msg) {
+  const dot = document.getElementById('connDot');
+  const st = document.getElementById('connStatus');
+  if (dot) dot.className = 'status-dot' + (ok ? '' : ok === null ? ' connecting' : ' disconnected');
+  if (st) st.textContent = msg || (ok ? '已连接' : '连接断开');
 }
 
-// ── Host: public state ────────────────────────────────────────────────────────
-function getPublicState() {
-  return {
-    phase: gameState.phase,
-    players: gameState.players.map(p => ({
-      id: p.id, nickname: p.nickname, connected: p.connected,
-      voted: !!(voteTargets[p.id]), isHost: p.id === myPeerId
-    })),
-    hostId: myPeerId,
-    diceValue: gameState.diceValue,
-    diceSeconds: gameState.diceSeconds
-  };
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function fmtTime(s) {
+  const m = Math.floor(s/60).toString().padStart(2,'0');
+  return m + ':' + (s%60).toString().padStart(2,'0');
 }
 
-function hostBroadcastState() {
-  const pub = getPublicState();
-  hostBroadcast('state_sync', {state: pub});
-  applyStateSync(pub);  // Host updates its own view
-}
+// ======================================================================
+// PEERJS INIT
+// ======================================================================
+function initPeer(customId) {
+  peer = customId ? new Peer(customId, PEER_CONFIG) : new Peer(PEER_CONFIG);
 
-// ── Host: init ────────────────────────────────────────────────────────────────
-function hostInit() {
-  gameState.players = [{id: myPeerId, nickname: NICKNAME, connected: true}];
-  gameState.hostId  = myPeerId;
-
-  peer.on('connection', conn => {
-    const gid = conn.peer;
-    guestConns[gid] = conn;
-
-    conn.on('open', () => {
-      // Send current state to new joiner
-      const snap = JSON.stringify({type:'state_sync', data:{state: getPublicState()}});
-      try { conn.send(snap); } catch(e){}
-    });
-    conn.on('data', raw => {
-      try { handleHostMsg(gid, JSON.parse(raw)); } catch(e){ console.error(e); }
-    });
-    conn.on('close', () => handleGuestDisconnect(gid));
-    conn.on('error', ()  => handleGuestDisconnect(gid));
+  peer.on('open', id => {
+    myId = id;
+    setConnStatus(true);
+    if (isHost) onHostOpen();
+    else onGuestOpen();
   });
 
-  // Host sees own view immediately
-  applyStateSync(getPublicState());
-  hideOverlay();
-  setLiveDot(true);
-}
-
-function handleHostMsg(fromId, msg) {
-  const {type, data} = msg;
-
-  if (type === 'player_join') {
-    if (gameState.phase !== 'waiting') {
-      hostSend(fromId, 'error', {message:'游戏已经开始，无法加入'}); return;
-    }
-    if (gameState.players.filter(p=>p.connected).length >= 8) {
-      hostSend(fromId, 'error', {message:'房间已满（最多8人）'}); return;
-    }
-    const nick = (data.nickname||'').trim().slice(0,16);
-    if (!nick) { hostSend(fromId, 'error', {message:'昵称不能为空'}); return; }
-    if (gameState.players.find(p => p.nickname === nick && p.connected)) {
-      hostSend(fromId, 'error', {message:'昵称已被使用，请换一个'}); return;
-    }
-
-    const existing = gameState.players.find(p => p.id === fromId);
-    if (existing) { existing.connected = true; existing.nickname = nick; }
-    else gameState.players.push({id: fromId, nickname: nick, connected: true});
-
-    hostBroadcastState();
-
-    // Resend role if game in progress
-    if (gameState.phase !== 'waiting' && roleMap[fromId]) {
-      hostSend(fromId, 'role_assign', {role: roleMap[fromId]});
-    }
-    return;
-  }
-
-  if (type === 'vote') {
-    if (gameState.phase !== 'voting') return;
-    if (voteTargets[fromId]) return;  // already voted
-    if (data.targetId === fromId) { hostSend(fromId, 'error', {message:'不能投自己'}); return; }
-    if (!gameState.players.find(p => p.id === data.targetId && p.connected)) return;
-
-    voteTargets[fromId] = data.targetId;
-    hostBroadcastState();
-    hostCheckAllVoted();
-    return;
-  }
-}
-
-function handleGuestDisconnect(gid) {
-  const p = gameState.players.find(q => q.id === gid);
-  if (p) p.connected = false;
-  delete guestConns[gid];
-  hostBroadcastState();
-  if (gameState.phase === 'voting') hostCheckAllVoted();
-}
-
-function hostCheckAllVoted() {
-  const active = gameState.players.filter(p => p.connected);
-  if (active.length > 0 && active.every(p => voteTargets[p.id])) hostResolveVotes();
-}
-
-function hostResolveVotes() {
-  const tally = {};
-  gameState.players.filter(p => p.connected).forEach(p => {
-    const t = voteTargets[p.id];
-    if (t) tally[t] = (tally[t]||0) + 1;
-  });
-  const maxV = Math.max(...Object.values(tally), 0);
-  const tops = Object.keys(tally).filter(id => tally[id] === maxV);
-  const elimId = tops[Math.floor(Math.random() * tops.length)];
-  const elim   = gameState.players.find(p => p.id === elimId);
-  const thiefId = Object.keys(roleMap).find(id => roleMap[id] === 'thief');
-  const thief   = gameState.players.find(p => p.id === thiefId);
-
-  gameState.result = {
-    eliminatedId: elimId,
-    eliminatedNickname: elim ? elim.nickname : '未知',
-    thiefId, thiefNickname: thief ? thief.nickname : '未知',
-    thiefEliminated: elimId === thiefId,
-    winner: elimId === thiefId ? 'sleepers' : 'thief',
-    tally, wasTie: tops.length > 1
-  };
-  gameState.phase = 'result';
-  hostBroadcast('game_result', gameState.result);
-  hostBroadcastState();
-}
-
-// ── Guest: init ───────────────────────────────────────────────────────────────
-function guestInit() {
-  showOverlay('正在连接房间 ' + ROOM_ID + ' ...', '请稍候');
-  hostConn = peer.connect(ROOM_ID, {reliable: true});
-
-  hostConn.on('open', () => {
-    setLiveDot(true);
-    guestSend('player_join', {nickname: NICKNAME});
-  });
-  hostConn.on('data', raw => {
-    try { handleGuestMsg(JSON.parse(raw)); } catch(e){ console.error(e); }
-  });
-  hostConn.on('close', () => {
-    setLiveDot(false);
-    showOverlay('与房主的连接已断开', '请刷新重试或返回首页');
-  });
-  hostConn.on('error', err => {
-    setLiveDot(false);
-    showOverlay('连接失败', err.type === 'peer-unavailable' ? '房间不存在，请检查房间号' : (err.message||err.type));
-  });
-}
-
-function handleGuestMsg(msg) {
-  const {type, data} = msg;
-  if (type === 'state_sync') { applyStateSync(data.state); hideOverlay(); return; }
-  if (type === 'role_assign') {
-    myRole = data.role;
-    if (gameState.phase === 'dealing') applyRoleToCard(myRole);
-    return;
-  }
-  if (type === 'game_result') {
-    gameState.result = data;
-    renderResult(data);
-    return;
-  }
-  if (type === 'error') { showToast(data.message, 'error'); return; }
-}
-
-// ── Apply state sync ──────────────────────────────────────────────────────────
-let _prevPhase = null;
-
-function applyStateSync(pub) {
-  const prevPhase = gameState.phase;
-  gameState.phase   = pub.phase;
-  gameState.players = pub.players;
-  gameState.hostId  = pub.hostId;
-  if (pub.diceValue  !== undefined) gameState.diceValue  = pub.diceValue;
-  if (pub.diceSeconds !== undefined) gameState.diceSeconds = pub.diceSeconds;
-
-  updateHeader();
-  renderPlayerList();
-  updateHostControls();
-
-  if (pub.phase !== prevPhase) switchPhase(pub.phase);
-  if (pub.phase === 'voting') renderVoteProgress();
-}
-
-// ── Render player list ────────────────────────────────────────────────────────
-function renderPlayerList() {
-  const list = document.getElementById('waitingPlayerList');
-  if (!list) return;
-  list.innerHTML = gameState.players.map((p, i) => {
-    const isMe   = p.id === myPeerId;
-    const isHost = p.id === gameState.hostId;
-    return `<li class="player-item ${isMe?'is-me':''} ${isHost?'is-host':''}">
-      <div class="player-avatar">${EMOJIS[i % EMOJIS.length]}</div>
-      <span class="player-name">${escHtml(p.nickname)}</span>
-      <span style="display:flex;gap:4px;align-items:center">
-        ${isMe ? '<span class="player-badge badge-me">我</span>' : ''}
-        ${!p.connected ? '<span style="font-size:0.8rem;color:#c0392b">离线</span>' : ''}
-      </span>
-    </li>`;
-  }).join('');
-
-  const count = gameState.players.filter(p => p.connected).length;
-  const hint = document.getElementById('playerCountHint');
-  if (hint) {
-    if (count < 3) hint.textContent = `还需至少 ${3-count} 人才能开始`;
-    else if (count <= 8) hint.textContent = `${count} 人已就位，还可加入 ${8-count} 人`;
-    else hint.textContent = '房间已满（8人）';
-  }
-  document.getElementById('waitingRoomId').textContent = ROOM_ID;
-
-  // Show QR code once
-  if (!waitingQrDone && IS_HOST) {
-    waitingQrDone = true;
-    const joinUrl = `${location.origin}${location.pathname.replace('game.html','index.html')}?room=${ROOM_ID}`;
-    try {
-      new QRCode(document.getElementById('waitingQrcode'), {text: joinUrl, width:120, height:120, correctLevel: QRCode.CorrectLevel.M});
-    } catch(e){}
-  }
-}
-
-// ── Host controls visibility ──────────────────────────────────────────────────
-function amHost() { return IS_HOST && myPeerId === ROOM_ID; }
-
-function updateHostControls() {
-  const host = amHost();
-  const phase = gameState.phase;
-
-  // Show player list once connected
-  const cc = document.getElementById('connectingCard');
-  const pc = document.getElementById('playersCard');
-  const ic = document.getElementById('inviteCard');
-  if (cc && cc.style.display !== 'none' && gameState.players.length > 0) {
-    cc.style.display = 'none';
-    if (pc) pc.style.display = 'block';
-    if (ic) ic.style.display = IS_HOST ? 'block' : 'none';
-  }
-
-  _show('hostWaitControls',      host && phase === 'waiting');
-  _show('hostDealingControls',   host && phase === 'dealing');
-  _show('hostNightRollControls', host && phase === 'night');
-  _show('hostNightEndControls',  host && phase === 'night');
-  _show('hostDayControls',       host && phase === 'day');
-  _show('dayTimerCard',          true);  // everyone can use timer
-  _show('hostResultControls',    host && phase === 'result');
-  _show('guestResultWait',       !host && phase === 'result');
-
-  const btn = document.getElementById('btnStartGame');
-  if (btn) btn.disabled = gameState.players.filter(p => p.connected).length < 3;
-}
-
-function _show(id, visible) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = visible ? '' : 'none';
-}
-
-// ── Phase switching ───────────────────────────────────────────────────────────
-function switchPhase(phase) {
-  ['Waiting','Dealing','Night','Day','Voting','Result'].forEach(p => {
-    const el = document.getElementById('phase'+p);
-    if (el) el.classList.remove('active');
-  });
-  const target = document.getElementById('phase' + phase.charAt(0).toUpperCase() + phase.slice(1));
-  if (target) target.classList.add('active');
-
-  document.body.classList.toggle('night-mode', phase === 'night');
-
-  if (phase === 'dealing') initDealing();
-  if (phase === 'night')   initNight();
-  if (phase === 'day')     initDay();
-  if (phase === 'voting')  initVoting();
-  if (phase === 'waiting') resetForWaiting();
-  if (phase === 'result' && gameState.result) renderResult(gameState.result);
-}
-
-// ── Reset ─────────────────────────────────────────────────────────────────────
-function resetForWaiting() {
-  hasVoted    = false;
-  myRole      = null;
-  cardFlipped = false;
-  clearInterval(cardCountdownTimer);
-  clearInterval(diceCountdownTimer);
-  stopDiscussTimer();
-  updateHostControls();
-}
-
-// ── Waiting ───────────────────────────────────────────────────────────────────
-function copyRoomLink() {
-  const url = `${location.origin}${location.pathname.replace('game.html','index.html')}?room=${ROOM_ID}`;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => showToast('链接已复制！', 'success'));
-  } else { prompt('复制邀请链接:', url); }
-}
-
-// ── Start game (host only) ────────────────────────────────────────────────────
-function startGame() {
-  if (!amHost()) return;
-  const active = gameState.players.filter(p => p.connected);
-  if (active.length < 3) { showToast('至少需要3名玩家', 'error'); return; }
-  if (active.length > 8) { showToast('最多8名玩家', 'error'); return; }
-
-  // Assign roles
-  roleMap = {};
-  voteTargets = {};
-  const shuffled = [...active].sort(() => Math.random() - 0.5);
-  roleMap[shuffled[0].id] = 'thief';
-  for (let i = 1; i < shuffled.length; i++) roleMap[shuffled[i].id] = 'sleeper';
-
-  // Send role to each player privately
-  active.forEach(p => {
-    if (p.id === myPeerId) {
-      myRole = roleMap[p.id];
-    } else {
-      hostSend(p.id, 'role_assign', {role: roleMap[p.id]});
-    }
-  });
-
-  gameState.phase = 'dealing';
-  hostBroadcastState();
-}
-
-// ── Dealing ───────────────────────────────────────────────────────────────────
-function initDealing() {
-  cardFlipped = false;
-  clearInterval(cardCountdownTimer);
-  const fc = document.getElementById('flipCard');
-  if (fc) fc.classList.remove('flipped');
-  const ct = document.getElementById('cardTimer');
-  if (ct) ct.style.display = 'none';
-  const di = document.getElementById('dealingInstruction');
-  if (di) di.textContent = '点击卡牌查看你的身份（仅你可见）';
-  if (myRole) applyRoleToCard(myRole);
-}
-
-function applyRoleToCard(role) {
-  const back = document.getElementById('flipBack');
-  if (!back) return;
-  back.className = 'flip-back ' + role;
-  if (role === 'thief') {
-    document.getElementById('roleIcon').textContent = '🧀';
-    document.getElementById('roleName').textContent = '奶酪大盗';
-    document.getElementById('roleDesc').textContent = '天黑时偷走奶酪，天亮后混入贡献方！';
-  } else {
-    document.getElementById('roleIcon').textContent = '🐭';
-    document.getElementById('roleName').textContent = '贪睡鼠';
-    document.getElementById('roleDesc').textContent = '天黑请闭眼睡觉，天亮后找出大盗！';
-  }
-}
-
-function flipCard() {
-  if (cardFlipped) return;
-  if (!myRole) { showToast('还没收到身份牌，请稍候…', 'error'); return; }
-  cardFlipped = true;
-  document.getElementById('flipCard').classList.add('flipped');
-  const di = document.getElementById('dealingInstruction');
-  if (di) di.textContent = myRole === 'thief' ? '🧀 你是大盗！天黑时行动！' : '🐭 你是贪睡鼠！找出大盗！';
-
-  let sec = 5;
-  const timerEl = document.getElementById('cardTimer');
-  const cdEl    = document.getElementById('cardCountdown');
-  if (timerEl) timerEl.style.display = 'block';
-  if (cdEl)    cdEl.textContent = sec;
-
-  cardCountdownTimer = setInterval(() => {
-    sec--;
-    if (cdEl) cdEl.textContent = sec;
-    if (sec <= 0) {
-      clearInterval(cardCountdownTimer);
-      document.getElementById('flipCard').classList.remove('flipped');
-      if (timerEl) timerEl.style.display = 'none';
-      const d = document.getElementById('dealingInstruction');
-      if (d) d.textContent = '✅ 已查看身份，等待房主推进';
-    }
-  }, 1000);
-}
-
-function proceedToNight() {
-  if (!amHost()) return;
-  gameState.phase = 'night';
-  hostBroadcastState();
-}
-
-// ── Night ─────────────────────────────────────────────────────────────────────
-function initNight() {
-  clearInterval(diceCountdownTimer);
-  _show('diceValueDisplay', false);
-  _show('countdownWrapper', false);
-  renderDice(0);
-
-  const thc = document.getElementById('thiefHintCard');
-  if (thc) thc.style.display = myRole === 'thief' ? 'block' : 'none';
-
-  const nrh = document.getElementById('nightRoleHint');
-  if (nrh) nrh.textContent = myRole === 'thief'
-    ? '🧀 你是大盗 — 趁大家睡着，偷走奶酪指示物！'
-    : '😴 贪睡鼠请闭眼，保持静默…';
-}
-
-function renderDice(value) {
-  const dice = document.getElementById('dice');
-  if (!dice) return;
-  dice.innerHTML = '';
-  for (let r = 1; r <= 3; r++) {
-    for (let c = 1; c <= 3; c++) {
-      const dot = document.createElement('div');
-      dot.className = 'dot';
-      const active = value > 0 && (DICE_LAYOUTS[value]||[]).some(([dr,dc]) => dr===r && dc===c);
-      if (!active) dot.classList.add('hidden');
-      dice.appendChild(dot);
-    }
-  }
-}
-
-function rollDice() {
-  if (!amHost()) return;
-  const btn = document.getElementById('btnRollDice');
-  if (btn) btn.disabled = true;
-
-  const value   = Math.floor(Math.random() * 6) + 1;
-  const seconds = value * 10;
-  gameState.diceValue   = value;
-  gameState.diceSeconds = seconds;
-
-  hostBroadcastState();
-  displayDiceRoll(value, seconds);
-}
-
-function displayDiceRoll(value, seconds) {
-  const dice = document.getElementById('dice');
-  if (dice) {
-    dice.classList.add('rolling');
-    setTimeout(() => { dice.classList.remove('rolling'); renderDice(value); }, 650);
-  }
-  const dvd = document.getElementById('diceValueDisplay');
-  if (dvd) { dvd.style.display = 'block'; dvd.textContent = `🎲 ${value} 点 → 静眠 ${seconds} 秒`; }
-
-  _show('countdownWrapper', true);
-  clearInterval(diceCountdownTimer);
-  let remaining = seconds;
-  const cde = document.getElementById('countdown');
-  if (cde) { cde.textContent = remaining; cde.classList.remove('urgent'); }
-  const sh = document.getElementById('sleepHintText');
-  if (sh) sh.textContent = '贡献方静眠倒计时';
-
-  diceCountdownTimer = setInterval(() => {
-    remaining--;
-    if (cde) { cde.textContent = remaining; cde.classList.toggle('urgent', remaining <= 5); }
-    if (remaining <= 0) { clearInterval(diceCountdownTimer); if (sh) sh.textContent = '时间到！'; }
-  }, 1000);
-
-  const brb = document.getElementById('btnRollDice');
-  if (brb) brb.disabled = true;
-}
-
-function endNight() {
-  if (!amHost()) return;
-  clearInterval(diceCountdownTimer);
-  gameState.phase = 'day';
-  hostBroadcastState();
-}
-
-// ── Day ───────────────────────────────────────────────────────────────────────
-function initDay() {
-  stopDiscussTimer();
-  const btn = document.getElementById('btnDiscussTimer');
-  if (btn) btn.textContent = '▶️ 开始计时';
-  _show('dayTimerDisplay', false);
-  discussRunning = false;
-
-  document.getElementById('dayPlayerCount').textContent = gameState.players.filter(p=>p.connected).length + ' 人';
-  document.getElementById('daySleepInfo').textContent =
-    gameState.diceValue ? `骰子 ${gameState.diceValue} 点，${gameState.diceSeconds} 秒` : '已完成';
-  document.getElementById('dayMyRole').textContent =
-    myRole === 'thief' ? '🧀 奶酪大盗' : myRole === 'sleeper' ? '🐭 贪睡鼠' : '未知';
-}
-
-let _discInterval = null;
-function toggleDiscussTimer() {
-  if (!discussRunning) {
-    const min = parseInt(document.getElementById('discussMinutes').value) || 3;
-    discussSeconds = min * 60;
-    discussRunning = true;
-    document.getElementById('btnDiscussTimer').textContent = '⏹ 停止计时';
-    _show('dayTimerDisplay', true);
-    updateDiscussDisplay();
-    _discInterval = setInterval(() => {
-      discussSeconds--;
-      updateDiscussDisplay();
-      if (discussSeconds <= 0) stopDiscussTimer();
-    }, 1000);
-  } else { stopDiscussTimer(); }
-}
-
-function updateDiscussDisplay() {
-  const el = document.getElementById('dayTimerDisplay');
-  if (!el) return;
-  const m = Math.floor(Math.max(0,discussSeconds)/60);
-  const s = Math.max(0,discussSeconds)%60;
-  el.textContent = `${m}:${String(s).padStart(2,'0')}`;
-  el.style.color = discussSeconds <= 30 ? '#e74c3c' : 'var(--brown)';
-}
-
-function stopDiscussTimer() {
-  clearInterval(_discInterval);
-  discussRunning = false;
-  const btn = document.getElementById('btnDiscussTimer');
-  if (btn) btn.textContent = '▶️ 开始计时';
-}
-
-function startVote() {
-  if (!amHost()) return;
-  voteTargets = {};
-  gameState.players.forEach(p => { p.voted = false; });
-  gameState.phase = 'voting';
-  hostBroadcastState();
-}
-
-// ── Voting ────────────────────────────────────────────────────────────────────
-function initVoting() {
-  hasVoted = false;
-  _show('voteWaitCard', false);
-  const vi = document.getElementById('votingInstruction');
-  if (vi) vi.textContent = '点击你认为是奶酪大盗的玩家';
-
-  const vg = document.getElementById('voteGrid');
-  if (!vg) return;
-  const active = gameState.players.filter(p => p.connected);
-  vg.innerHTML = active.map((p, i) => {
-    const isMe = p.id === myPeerId;
-    return `<button class="vote-btn" id="voteBtn_${p.id}" onclick="castVote('${p.id}')" ${isMe?'disabled title="不能投自己"':''}>
-      <div class="vote-avatar">${EMOJIS[i % EMOJIS.length]}</div>
-      <span>${escHtml(p.nickname)}</span>
-      ${isMe ? '<span style="font-size:0.75rem;color:#aaa">（我）</span>' : ''}
-    </button>`;
-  }).join('');
-  renderVoteProgress();
-}
-
-function renderVoteProgress() {
-  const list = document.getElementById('voteProgressList');
-  if (!list) return;
-  list.innerHTML = gameState.players.filter(p => p.connected).map(p => {
-    const isMe = p.id === myPeerId;
-    return `<li class="player-item ${isMe?'is-me':''}">
-      <div class="player-avatar" style="font-size:1rem">${p.voted ? '✅' : '⏳'}</div>
-      <span class="player-name">${escHtml(p.nickname)}</span>
-      <span class="player-badge ${p.voted?'badge-voted':'badge-waiting'}">${p.voted?'已投票':'等待中'}</span>
-    </li>`;
-  }).join('');
-}
-
-function castVote(targetId) {
-  if (hasVoted) return;
-  if (targetId === myPeerId) { showToast('不能投自己！', 'error'); return; }
-
-  hasVoted = true;
-  document.querySelectorAll('.vote-btn').forEach(b => b.disabled = true);
-  _show('voteWaitCard', true);
-  document.getElementById('votingInstruction').textContent = '✅ 投票完成，等待其他人…';
-  showToast('投票成功！', 'success');
-
-  if (amHost()) {
-    // Host votes for self
-    voteTargets[myPeerId] = targetId;
-    hostBroadcastState();
-    hostCheckAllVoted();
-  } else {
-    guestSend('vote', {targetId});
-  }
-}
-
-// ── Result ────────────────────────────────────────────────────────────────────
-function renderResult(data) {
-  const sleepersWin = data.winner === 'sleepers';
-  const banner = document.getElementById('resultBanner');
-  if (banner) banner.className = 'result-banner ' + (sleepersWin ? 'sleepers-win' : 'thief-wins');
-  document.getElementById('resultIcon').textContent    = sleepersWin ? '🎉' : '🧀';
-  document.getElementById('resultTitle').textContent   = sleepersWin ? '贡献方获胜！' : '大盗获胜！';
-  document.getElementById('resultSubtitle').textContent = sleepersWin
-    ? '大盗被揪出来了！奶酪保住了！'
-    : '大盗成功混入！奶酪被偷走了！';
-  document.getElementById('revealThiefName').textContent = data.thiefNickname;
-
-  const ei = document.getElementById('eliminatedInfo');
-  if (ei) {
-    ei.innerHTML = data.wasTie
-      ? `<p style="color:#888;font-size:0.9rem">⚖️ 平票！随机抽签出局：<strong>${escHtml(data.eliminatedNickname)}</strong></p>`
-      : `<p style="color:#888;font-size:0.9rem">被投出局：<strong>${escHtml(data.eliminatedNickname)}</strong></p>`;
-  }
-
-  const tally = document.getElementById('voteTally');
-  if (tally && data.tally) {
-    const maxV = Math.max(...Object.values(data.tally), 1);
-    tally.innerHTML = gameState.players.filter(p => p.connected).map(p => {
-      const votes  = data.tally[p.id] || 0;
-      const pct    = Math.round((votes / maxV) * 100);
-      const isElim = p.id === data.eliminatedId;
-      const isTh   = p.id === data.thiefId;
-      return `<div class="tally-row ${isElim?'eliminated-highlight':''}" style="padding:6px;border-radius:6px">
-        <span class="tally-name">${isTh?'🧀':'🐭'} ${escHtml(p.nickname)}</span>
-        <div class="tally-bar"><div class="tally-fill" style="width:${pct}%"></div></div>
-        <span class="tally-count">${votes}票</span>
-        ${isElim?'<span style="font-size:0.8rem;color:#e74c3c">出局</span>':''}
-      </div>`;
-    }).join('');
-  }
-
-  updateHostControls();
-}
-
-function restartGame() {
-  if (!amHost()) return;
-  myRole = null;
-  hasVoted = false;
-  cardFlipped = false;
-  roleMap = {};
-  voteTargets = {};
-  gameState.result = null;
-  gameState.diceValue = null;
-  gameState.diceSeconds = null;
-  gameState.players.forEach(p => { p.voted = false; });
-  gameState.players = gameState.players.filter(p => p.connected);
-  gameState.phase = 'waiting';
-  hostBroadcastState();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════════════════════
-
-window.addEventListener('DOMContentLoaded', () => {
-  if (!ROOM_ID || !NICKNAME) { location.href = 'index.html'; return; }
-
-  updateHeader();
-  renderDice(0);
-  showOverlay('正在初始化连接...', '请稍候');
-
-  if (IS_HOST) {
-    // Host creates peer with ROOM_ID as peer ID
-    peer = new Peer(ROOM_ID, {debug: 0});
-  } else {
-    // Guest creates peer with random ID
-    peer = new Peer({debug: 0});
-  }
-
-  peer.on('open', (id) => {
-    myPeerId = id;
-    if (IS_HOST) {
-      hostInit();
-    } else {
-      guestInit();
-    }
-  });
-
-  peer.on('error', (err) => {
-    console.error('Peer error:', err);
+  peer.on('error', err => {
+    console.error('Peer error:', err.type, err);
     if (err.type === 'unavailable-id') {
-      showOverlay('房间号已被占用', '请返回首页重新创建');
+      showToast('房间码冲突，请返回重试', 'error');
+      setTimeout(() => location.href = 'index.html', 2000);
     } else if (err.type === 'peer-unavailable') {
-      showOverlay('无法连接到房间', '房间可能不存在或已关闭');
+      showToast('找不到该房间，请检查房间码', 'error');
+      setConnStatus(false);
     } else {
-      showOverlay('连接错误: ' + (err.message || err.type), '请刷新重试');
+      showToast('网络错误: ' + err.type, 'error');
+      setConnStatus(false);
     }
   });
 
   peer.on('disconnected', () => {
-    setLiveDot(false);
-    // Try to reconnect
-    try { peer.reconnect(); } catch(e) {}
+    setConnStatus(false, '连接断开，尝试重连…');
+    setTimeout(() => { if (peer && !peer.destroyed) peer.reconnect(); }, 3000);
   });
+
+  if (isHost) {
+    peer.on('connection', conn => hostHandleIncoming(conn));
+  }
+}
+
+// ======================================================================
+// HOST — CONNECTION MANAGEMENT
+// ======================================================================
+function onHostOpen() {
+  if (!roomCode) { roomCode = uid6(); localStorage.setItem('roomCode', roomCode); }
+
+  G.players = [{ id: myId, name: myName, role:'', dice:0, isAccomplice:false, hasVoted:false, isConnected:true }];
+
+  document.getElementById('lobbyRoomCode').textContent = roomCode;
+  document.getElementById('hostControls').style.display = 'flex';
+  document.getElementById('guestWaiting').style.display = 'none';
+  renderLobby();
+  updateStartBtn();
+  buildQR();
+}
+
+function hostHandleIncoming(conn) {
+  conn.on('open', () => {
+    connections[conn.peer] = conn;
+    conn.on('data', data => hostOnData(data, conn.peer));
+    conn.on('close', () => hostOnDisconnect(conn.peer));
+    conn.on('error', () => hostOnDisconnect(conn.peer));
+    // Send current state immediately
+    conn.send({ type:'state_sync', state: sanitize(G, conn.peer) });
+  });
+}
+
+function hostOnDisconnect(pid) {
+  const p = pById(pid);
+  if (p) {
+    p.isConnected = false;
+    showToast(p.name + ' 断线', 'warning');
+    hostBroadcast();
+    renderLobby();
+  }
+  delete connections[pid];
+}
+
+// ======================================================================
+// HOST — MESSAGE HANDLING
+// ======================================================================
+function hostOnData(data, from) {
+  switch (data.type) {
+    case 'join_req':       hostJoin(data, from); break;
+    case 'dice_roll':      hostDiceRoll(data, from); break;
+    case 'steal_cheese':   hostStealCheese(from); break;
+    case 'check_dice':     hostCheckDice(data, from); break;
+    case 'vote':           hostVote(data, from); break;
+    case 'accomplice_ack': hostAccompliceAck(from); break;
+    case 'accomplice_pick':hostAccomplicePick(data, from); break;
+    case 'ping':           sendTo(from, {type:'pong'}); break;
+  }
+}
+
+function hostJoin(data, from) {
+  if (G.phase !== 'waiting') { sendTo(from, {type:'join_rej', reason:'游戏已开始'}); return; }
+  if (G.players.length >= 8) { sendTo(from, {type:'join_rej', reason:'房间已满'}); return; }
+
+  let p = pById(from);
+  if (!p) {
+    p = {id:from, name:data.name, role:'', dice:0, isAccomplice:false, hasVoted:false, isConnected:true};
+    G.players.push(p);
+  } else {
+    p.isConnected = true; p.name = data.name;
+  }
+  sendTo(from, {type:'join_ok', id:from});
+  showToast(data.name + ' 加入了', 'info');
+  hostBroadcast();
+  renderLobby();
+  updateStartBtn();
+}
+
+function hostDiceRoll(data, from) {
+  const p = pById(from);
+  if (p) { p.dice = data.value; hostBroadcast(); updateDiceStatus(); }
+}
+
+function hostStealCheese(from) {
+  if (from === G.thiefId) { G.cheeseStolen = true; addLog('🧀 奶酪被偷走了！'); hostBroadcast(); }
+}
+
+function hostCheckDice(data, from) {
+  const t = pById(data.target);
+  if (t) {
+    sendTo(from, {type:'check_result', name:t.name, dice:t.dice});
+    addLog('👁️ 有人查看了 ' + t.name + ' 的点数');
+  }
+}
+
+function hostVote(data, from) {
+  const p = pById(from);
+  if (p && !p.hasVoted && data.target !== from) {
+    p.hasVoted = true;
+    G.votes[from] = data.target;
+    hostBroadcast();
+    updateVoteProgress();
+    const done = G.players.filter(p=>p.hasVoted).length;
+    if (done === G.players.length) showToast('所有人已投票！', 'success');
+  }
+}
+
+function hostAccompliceAck(from) {
+  G.accompliceAckCount++;
+  if (G.accompliceAckCount >= G.accompliceCount) {
+    if (nightAccompliceResolve) { nightAccompliceResolve(); nightAccompliceResolve = null; }
+  }
+}
+
+function hostAccomplicePick(data, from) {
+  // Guest thief sent their accomplice picks
+  if (from === G.thiefId) applyAccomplicePicks(data.ids);
+}
+
+// ======================================================================
+// HOST — BROADCAST
+// ======================================================================
+function hostBroadcast() {
+  Object.keys(connections).forEach(pid => sendTo(pid, {type:'state_sync', state:sanitize(G, pid)}));
+}
+
+function hostBroadcastRaw(msg) {
+  Object.keys(connections).forEach(pid => sendTo(pid, msg));
+}
+
+function sendTo(pid, msg) {
+  const c = connections[pid];
+  if (c && c.open) { try { c.send(msg); } catch(e) { console.warn('send fail', pid, e); } }
+}
+
+// Strip other players' private info when syncing to a specific player
+function sanitize(state, forId) {
+  const s = JSON.parse(JSON.stringify(state));
+  if (s.phase === 'dealing' || s.phase === 'night') {
+    s.players = s.players.map(p => {
+      if (p.id === forId) return p;
+      return {id:p.id, name:p.name, role:'', dice:0, isAccomplice:false, hasVoted:p.hasVoted, isConnected:p.isConnected};
+    });
+  }
+  return s;
+}
+
+// ======================================================================
+// GUEST — CONNECTION
+// ======================================================================
+function onGuestOpen() {
+  connectToHost();
+}
+
+let reconnectAttempts = 0;
+function connectToHost() {  hostConn = peer.connect(hostPeerId(roomCode), {reliable:true, serialization:'json'});
+
+  hostConn.on('open', () => {
+    reconnectAttempts = 0;
+    setConnStatus(true);
+    hostConn.send({type:'join_req', name:myName});
+  });
+
+  hostConn.on('data', data => guestOnData(data));
+
+  hostConn.on('close', () => {
+    setConnStatus(false, '与房主断线');
+    if (G.phase !== 'result' && reconnectAttempts < 5) {
+      reconnectAttempts++;
+      showToast('尝试重连… (' + reconnectAttempts + '/5)', 'warning');
+      setTimeout(connectToHost, 3000);
+    }
+  });
+
+  hostConn.on('error', err => {
+    setConnStatus(false, '连接失败: ' + err.type);
+  });
+}
+
+// ======================================================================
+// GUEST — MESSAGE HANDLING
+// ======================================================================
+function guestOnData(data) {
+  switch (data.type) {
+    case 'join_ok':
+      myId = data.id;
+      showToast('成功加入！', 'success');
+      break;
+    case 'join_rej':
+      showToast('加入失败: ' + data.reason, 'error');
+      setTimeout(() => location.href = 'index.html', 2000);
+      break;
+    case 'state_sync':
+      applySync(data.state);
+      break;
+    case 'role_assign':
+      myRole = data.role;
+      myIsAccomplice = !!data.isAccomplice;
+      updateIdentityCard();
+      break;
+    case 'wake_up':
+      vibrate([200,100,200]);
+      showWakeUI(data);
+      break;
+    case 'sleep':
+      showNightBlack();
+      break;
+    case 'accomplice_notify':
+      myIsAccomplice = true;
+      document.getElementById('accompliceNotifyTitle').textContent = '🤝 你成为了共犯！';
+      document.getElementById('accompliceNotifyDesc').textContent = data.desc;
+      showPage('accomplice-notify');
+      vibrate([300,100,300,100,300]);
+      break;
+    case 'accomplice_pick_req':
+      showGuestAccomplicePicker(data);
+      break;
+    case 'check_result':
+      showToast(data.name + ' 的点数是 ' + data.dice, 'info', 5000);
+      break;
+    case 'day_timer':
+      dayTimeLeft = data.t;
+      updateDayCountdown();
+      break;
+    case 'night_tick':
+      updateOverlayTimer(data.left, data.total);
+      break;
+    case 'pong': break;
+  }
+}
+
+function applySync(state) {
+  const prevPhase = G.phase;
+  G = Object.assign(G, state);
+
+  // Restore my private data
+  const me = myPlayer();
+  if (me && me.role) myRole = me.role;
+  if (me && me.dice) myDice = me.dice;
+  if (me) myIsAccomplice = !!me.isAccomplice;
+
+  renderPhase();
+
+  if (prevPhase !== G.phase) onPhaseTransition(prevPhase, G.phase);
+}
+
+function onPhaseTransition(from, to) {
+  if (to === 'night' && !isHost) showNightBlack();
+  if (to === 'day') {
+    hideNightOverlay();
+    document.body.classList.add('day-mode');
+    vibrate([100,50,100,50,100]);
+  }
+  if (to === 'voting') document.body.classList.add('day-mode');
+  if (to === 'result') document.body.classList.remove('day-mode');
+  if (to === 'waiting') document.body.classList.remove('day-mode');
+}
+
+// ======================================================================
+// HOST GAME FLOW
+// ======================================================================
+function hostStartGame() {
+  if (G.players.filter(p=>p.isConnected).length < 3) {
+    showToast('至少需要3名玩家', 'warning'); return;
+  }
+  G.discussionSeconds = parseInt(document.getElementById('discussionTime').value) || 300;
+  G.phase = 'dealing';
+  G.round++;
+  G.cheeseStolen = false;
+  G.votes = {};
+  G.nightLog = [];
+  G.accompliceCount = 0;
+  G.accompliceAckCount = 0;
+
+  // Assign roles
+  G.players.forEach(p => { p.role='mouse'; p.dice=0; p.isAccomplice=false; p.hasVoted=false; });
+  const ti = Math.floor(Math.random() * G.players.length);
+  G.players[ti].role = 'thief';
+  G.thiefId = G.players[ti].id;
+
+  // Send role to each player privately
+  G.players.forEach(p => {
+    const msg = {type:'role_assign', role:p.role, isAccomplice:false};
+    if (p.id === myId) { myRole = p.role; myIsAccomplice = false; updateIdentityCard(); }
+    else sendTo(p.id, msg);
+  });
+
+  hostBroadcast();
+  renderPhase();
+}
+
+async function hostStartNight() {
+  G.phase = 'night';
+  G.currentNightNumber = 0;
+  G.nightLog = [];
+  nightRunning = true;
+
+  hostBroadcast();
+  hostBroadcastRaw({type:'sleep'});
+  renderPhase();
+
+  await sleep(1500);
+  renderNightConsole();
+
+  for (let n = 1; n <= 6 && nightRunning; n++) {
+    G.currentNightNumber = n;
+    hostBroadcast();
+    updateNightProgress(n);
+
+    const waking = G.players.filter(p => p.dice === n);
+    const thief  = waking.find(p => p.role === 'thief');
+    const mice   = waking.filter(p => p.role === 'mouse');
+
+    if (waking.length > 0) {
+      // Wake each player
+      waking.forEach(p => {
+        const msg = buildWakeMsg(p, mice);
+        if (p.id === myId) { vibrate([200,100,200]); showWakeUI(msg); }
+        else sendTo(p.id, {type:'wake_up', ...msg});
+      });
+      addLog(`点数 ${n}: ${waking.map(p=>p.name).join('、')} 醒来`);
+    } else {
+      addLog(`点数 ${n}: 无人醒来`);
+    }
+
+    updateConsoleInfo(n, waking);
+    await hostNightCountdown(10, n);
+
+    // Put everyone back to sleep
+    waking.forEach(p => {
+      if (p.id !== myId) sendTo(p.id, {type:'sleep'});
+    });
+    if (waking.find(p => p.id === myId)) hideWakeUI();
+
+    await sleep(600);
+  }
+
+  nightRunning = false;
+  await runAccomplicePhase();
+}
+
+function buildWakeMsg(player, miceWaking) {
+  if (player.role === 'thief') {
+    return {role:'thief', emoji:'🦊', title:'你是奶酪大盗！', desc:'你可以偷走奶酪', action:'steal'};
+  }
+  if (miceWaking.length === 1) {
+    return {role:'mouse', emoji:'🐭', title:'嗜睡老鼠醒来', desc:'你是唯一醒着的老鼠，可以查看一名玩家的骰子点数', action:'check'};
+  }
+  const others = miceWaking.filter(m => m.id !== player.id).map(m=>m.name).join('、');
+  return {role:'mouse', emoji:'🐭', title:'你看到了同伴！', desc:'与你同时醒来的有: ' + others, action:'recognize'};
+}
+
+async function runAccomplicePhase() {
+  const n = G.players.length;
+  if (n < 5) { await transitionToDay(); return; }
+
+  const thief = pById(G.thiefId);
+
+  if (n === 5) {
+    const same = G.players.filter(p => p.role==='mouse' && p.dice===thief.dice);
+    if (same.length === 0) {
+      addLog('5人局：无共犯');
+      await transitionToDay();
+    } else if (same.length === 1) {
+      same[0].isAccomplice = true;
+      G.accompliceCount = 1;
+      addLog('5人局：' + same[0].name + ' 成为共犯');
+      await notifyAndWaitAccomplices(same, '你与奶酪大盗骰出了相同点数！');
+    } else {
+      await hostPickAccomplices(thief, same, 1, '5人局，选1位同点数玩家成为共犯');
+    }
+  } else if (n === 6) {
+    await hostPickAccomplices(thief, G.players.filter(p=>p.id!==thief.id), 1,
+      '6人局，选1位玩家成为共犯（对方会知道你的身份）');
+  } else if (n === 7) {
+    await hostPickAccomplices(thief, G.players.filter(p=>p.id!==thief.id), 2,
+      '7人局，选2位玩家成为共犯（对方不知道大盗是谁）');
+  } else {
+    await hostPickAccomplices(thief, G.players.filter(p=>p.id!==thief.id), 2,
+      '8人局，选2位玩家成为共犯（三人互相认识）');
+  }
+}
+
+function hostPickAccomplices(thief, candidates, count, desc) {
+  return new Promise(resolve => {
+    nightAccompliceResolve = resolve;
+    G.accompliceCount = count;
+    G.accompliceAckCount = 0;
+    hostAccompliceSelected.clear();
+
+    if (thief.id === myId) {
+      // Host is thief, show selection on console
+      const sec = document.getElementById('accompliceSection');
+      sec.style.display = 'flex';
+      document.getElementById('accompliceTitle').textContent = `🤝 选择共犯（选${count}人）`;
+      document.getElementById('accompliceDesc').textContent = desc;
+      const list = document.getElementById('accomplicePlayerList');
+      list.innerHTML = '';
+      candidates.forEach((p,i) => {
+        const btn = document.createElement('button');
+        btn.className = 'player-select-item';
+        btn.dataset.id = p.id;
+        btn.innerHTML = `<span style="font-size:1.5rem;">${getEmoji(G.players.indexOf(p))}</span><span class="player-name">${p.name}</span>`;
+        btn.onclick = () => toggleHostAccomplice(p.id, count, btn);
+        list.appendChild(btn);
+      });
+      document.getElementById('accompliceConfirmBtn').disabled = true;
+    } else {
+      // Thief is a guest, send them the picker
+      sendTo(thief.id, {
+        type:'accomplice_pick_req',
+        candidates: candidates.map(p => ({id:p.id, name:p.name, idx:G.players.indexOf(p)})),
+        count, desc
+      });
+    }
+  });
+}
+
+function toggleHostAccomplice(id, max, btn) {
+  if (hostAccompliceSelected.has(id)) {
+    hostAccompliceSelected.delete(id);
+    btn.classList.remove('selected');
+  } else {
+    if (hostAccompliceSelected.size >= max) {
+      const first = hostAccompliceSelected.values().next().value;
+      hostAccompliceSelected.delete(first);
+      document.querySelector(`#accomplicePlayerList [data-id="${first}"]`)?.classList.remove('selected');
+    }
+    hostAccompliceSelected.add(id);
+    btn.classList.add('selected');
+  }
+  document.getElementById('accompliceConfirmBtn').disabled = hostAccompliceSelected.size !== max;
+}
+
+function confirmAccompliceSelection() {
+  applyAccomplicePicks(Array.from(hostAccompliceSelected));
+}
+
+function applyAccomplicePicks(ids) {
+  const n = G.players.length;
+  ids.forEach(id => { const p = pById(id); if (p) p.isAccomplice = true; });
+  G.accompliceCount = ids.length;
+  G.accompliceAckCount = 0;
+
+  const sec = document.getElementById('accompliceSection');
+  sec.style.display = 'none';
+
+  const thief = pById(G.thiefId);
+  let notifyDesc = '';
+  if (n === 5) notifyDesc = '你与奶酪大盗骰出了相同点数！';
+  else if (n === 6) notifyDesc = `奶酪大盗是 ${thief.name}，请帮助他躲避追查！`;
+  else if (n === 7) notifyDesc = '你成为了共犯，帮助大盗，但你不知道大盗是谁。';
+  else notifyDesc = `你们三人互相认识。大盗是 ${thief.name}。`;
+
+  addLog(`共犯：${ids.map(id=>pById(id)?.name).join('、') || '无'}`);
+  hostBroadcast();
+
+  notifyAndWaitAccomplices(ids.map(id=>pById(id)).filter(Boolean), notifyDesc).then(() => {
+    if (nightAccompliceResolve) { nightAccompliceResolve(); nightAccompliceResolve = null; }
+  });
+}
+
+async function notifyAndWaitAccomplices(players, desc) {
+  if (players.length === 0) { await transitionToDay(); return; }
+
+  G.accompliceCount = players.length;
+  G.accompliceAckCount = 0;
+
+  let hostIsAccomplice = false;
+  players.forEach(p => {
+    if (p.id === myId) hostIsAccomplice = true;
+    else sendTo(p.id, {type:'accomplice_notify', desc});
+  });
+
+  if (hostIsAccomplice) {
+    myIsAccomplice = true;
+    const me = myPlayer(); if (me) me.isAccomplice = true;
+    showToast('你成为了共犯！', 'warning', 5000);
+    vibrate([300,100,300,100,300]);
+    // Auto-ack after 4s
+    setTimeout(() => { G.accompliceAckCount++; checkAccompliceAllAcked(); }, 4000);
+  }
+
+  return new Promise(resolve => {
+    nightAccompliceResolve = resolve;
+    checkAccompliceAllAcked();
+  });
+}
+
+function checkAccompliceAllAcked() {
+  if (G.accompliceAckCount >= G.accompliceCount) {
+    if (nightAccompliceResolve) { nightAccompliceResolve(); nightAccompliceResolve = null; }
+  }
+}
+
+async function transitionToDay() {
+  await sleep(800);
+  G.phase = 'day';
+  G.currentNightNumber = 0;
+  dayTimeLeft = G.discussionSeconds;
+
+  hostBroadcast();
+  hostBroadcastRaw({type:'sleep'});
+  document.body.classList.add('day-mode');
+  hideNightOverlay();
+  renderPhase();
+  startDayTimer();
+}
+
+// ======================================================================
+// NIGHT TIMER
+// ======================================================================
+async function hostNightCountdown(seconds, numLabel) {
+  return new Promise(resolve => {
+    let left = seconds;
+    updateConsoleTimer(left, seconds);
+    updateOverlayTimer(left, seconds);
+    hostBroadcastRaw({type:'night_tick', left, total:seconds});
+
+    nightCurrentInterval = setInterval(() => {
+      left--;
+      updateConsoleTimer(left, seconds);
+      updateOverlayTimer(left, seconds);
+      hostBroadcastRaw({type:'night_tick', left, total:seconds});
+      if (left <= 0) { clearInterval(nightCurrentInterval); resolve(); }
+    }, 1000);
+  });
+}
+
+function updateConsoleTimer(left, total) {
+  const ring = document.getElementById('consoleTimerRing');
+  const num  = document.getElementById('consoleTimerNum');
+  if (ring) ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - left/total);
+  if (num) num.textContent = left;
+}
+
+function updateOverlayTimer(left, total) {
+  const ring = document.getElementById('timerRing');
+  const num  = document.getElementById('timerNum');
+  if (ring) ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - left/total);
+  if (num) num.textContent = left;
+}
+
+function addLog(msg) {
+  if (!G.nightLog) G.nightLog = [];
+  G.nightLog.push(msg);
+  const list = document.getElementById('nightLogList');
+  if (list) {
+    const d = document.createElement('div');
+    d.textContent = msg;
+    list.appendChild(d);
+    list.parentElement.scrollTop = list.parentElement.scrollHeight;
+  }
+}
+
+// ======================================================================
+// NIGHT OVERLAY
+// ======================================================================
+function showNightBlack() {
+  const ov = document.getElementById('nightOverlay');
+  ov.classList.remove('hidden');
+  document.getElementById('nightMsg').textContent = '闭上眼睛…';
+  document.getElementById('wakeContent').innerHTML = '';
+  document.getElementById('nightTimerWrap').classList.add('hidden');
+}
+
+function hideNightOverlay() {
+  document.getElementById('nightOverlay').classList.add('hidden');
+}
+
+function showWakeUI(data) {
+  const ov = document.getElementById('nightOverlay');
+  ov.classList.remove('hidden');
+  document.getElementById('nightMsg').textContent = '';
+  document.getElementById('nightTimerWrap').classList.remove('hidden');
+
+  let html = `<div class="wake-content">
+    <div class="wake-role">${data.role==='thief' ? '🦊 奶酪大盗' : '🐭 嗜睡老鼠'}</div>
+    <div class="wake-emoji">${data.emoji||'👁️'}</div>
+    <div class="wake-title">${data.title}</div>
+    <div class="wake-subtitle">${data.desc}</div>`;
+
+  if (data.action === 'steal') {
+    html += `<button class="btn btn-danger" id="stealBtn" onclick="doStealCheese()" style="width:200px;">🧀 拿走奶酪</button>`;
+  } else if (data.action === 'check') {
+    html += `<div id="checkList" style="width:100%;display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow-y:auto;">`;
+    G.players.forEach((p,i) => {
+      if (p.id !== myId) {
+        html += `<button class="player-select-item" onclick="doCheckDice('${p.id}')">
+          <span>${getEmoji(i)}</span><span>${p.name}</span>
+        </button>`;
+      }
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  document.getElementById('wakeContent').innerHTML = html;
+}
+
+function hideWakeUI() {
+  document.getElementById('wakeContent').innerHTML = '';
+  document.getElementById('nightMsg').textContent = '闭上眼睛…';
+  document.getElementById('nightTimerWrap').classList.add('hidden');
+}
+
+function doStealCheese() {
+  const btn = document.getElementById('stealBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '✅ 已拿走奶酪'; }
+  if (isHost) { G.cheeseStolen = true; addLog('🧀 奶酪被偷走了！'); hostBroadcast(); }
+  else hostConn.send({type:'steal_cheese'});
+  showToast('奶酪已拿走！', 'success');
+}
+
+function doCheckDice(targetId) {
+  document.querySelectorAll('#checkList .player-select-item').forEach(b => { b.disabled=true; b.classList.add('disabled'); });
+  if (isHost) {
+    const t = pById(targetId);
+    if (t) { showToast(t.name + ' 的点数是 ' + t.dice, 'info', 5000); addLog('👁️ 主持人查看了 '+t.name+' 的点数'); }
+  } else {
+    hostConn.send({type:'check_dice', target:targetId});
+  }
+}
+
+// Guest accomplice picker
+function showGuestAccomplicePicker(data) {
+  guestAccompliceSelected.clear();
+  guestAccompliceRequired = data.count;
+  showNightBlack();
+  const ov = document.getElementById('nightOverlay');
+  ov.classList.remove('hidden');
+  document.getElementById('nightMsg').textContent = '';
+
+  let html = `<div class="wake-content" style="max-width:90vw;">
+    <div class="wake-emoji">🦊</div>
+    <div class="wake-title">选择共犯（选${data.count}人）</div>
+    <div class="wake-subtitle">${data.desc}</div>
+    <div id="gPickList" style="width:100%;display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow-y:auto;">`;
+
+  data.candidates.forEach(p => {
+    html += `<button class="player-select-item" data-id="${p.id}" onclick="toggleGuestPick('${p.id}',this)">
+      <span>${getEmoji(p.idx)}</span><span>${p.name}</span>
+    </button>`;
+  });
+
+  html += `</div>
+    <button class="btn btn-primary" id="gPickConfirm" onclick="submitGuestPick()" disabled style="width:200px;margin-top:8px;">确认</button>
+  </div>`;
+
+  document.getElementById('wakeContent').innerHTML = html;
+}
+
+function toggleGuestPick(id, btn) {
+  if (guestAccompliceSelected.has(id)) {
+    guestAccompliceSelected.delete(id);
+    btn.classList.remove('selected');
+  } else {
+    if (guestAccompliceSelected.size >= guestAccompliceRequired) {
+      const first = guestAccompliceSelected.values().next().value;
+      guestAccompliceSelected.delete(first);
+      document.querySelector(`#gPickList [data-id="${first}"]`)?.classList.remove('selected');
+    }
+    guestAccompliceSelected.add(id);
+    btn.classList.add('selected');
+  }
+  const btn2 = document.getElementById('gPickConfirm');
+  if (btn2) btn2.disabled = guestAccompliceSelected.size !== guestAccompliceRequired;
+}
+
+function submitGuestPick() {
+  hostConn.send({type:'accomplice_pick', ids:Array.from(guestAccompliceSelected)});
+  hideWakeUI();
+  showNightBlack();
+}
+
+function guestAcknowledgeAccomplice() {
+  if (isHost) { G.accompliceAckCount++; checkAccompliceAllAcked(); }
+  else hostConn.send({type:'accomplice_ack'});
+  showNightBlack();
+}
+
+// ======================================================================
+// DAY PHASE
+// ======================================================================
+function startDayTimer() {
+  clearInterval(dayTimerInterval);
+  dayTimerPaused = false;
+  updateDayCountdown();
+  dayTimerInterval = setInterval(() => {
+    if (dayTimerPaused) return;
+    dayTimeLeft = Math.max(0, dayTimeLeft - 1);
+    updateDayCountdown();
+    hostBroadcastRaw({type:'day_timer', t:dayTimeLeft});
+    if (dayTimeLeft === 0) { clearInterval(dayTimerInterval); showToast('讨论时间结束！', 'warning'); }
+  }, 1000);
+}
+
+function updateDayCountdown() {
+  const el = document.getElementById('dayCountdown');
+  if (!el) return;
+  el.textContent = fmtTime(dayTimeLeft);
+  el.classList.toggle('urgent', dayTimeLeft <= 30);
+}
+
+function pauseResumeDayTimer() {
+  dayTimerPaused = !dayTimerPaused;
+  const btn = document.getElementById('pauseBtn');
+  if (btn) btn.textContent = dayTimerPaused ? '▶ 继续' : '⏸ 暂停';
+}
+
+function hostStartVoting() {
+  G.phase = 'voting';
+  G.players.forEach(p => { p.hasVoted=false; });
+  G.votes = {};
+  clearInterval(dayTimerInterval);
+  hostBroadcast();
+  renderPhase();
+}
+
+// ======================================================================
+// VOTING
+// ======================================================================
+function castVote(targetId) {
+  const me = myPlayer();
+  if (!me || me.hasVoted || targetId === myId) return;
+  me.hasVoted = true;
+  if (isHost) {
+    G.votes[myId] = targetId;
+    hostBroadcast();
+    updateVoteProgress();
+    const done = G.players.filter(p=>p.hasVoted).length;
+    if (done === G.players.length) showToast('所有人已投票！', 'success');
+  } else {
+    hostConn.send({type:'vote', target:targetId});
+  }
+  document.getElementById('myVoteCard').style.display = 'none';
+  document.getElementById('voteSubmitted').style.display = 'flex';
+  document.getElementById('voteWaitingText').textContent = '你投给了 ' + (pById(targetId)?.name || '?');
+}
+
+function updateVoteProgress() {
+  const done = G.players.filter(p=>p.hasVoted).length;
+  const total = G.players.length;
+  const el = document.getElementById('voteProgressText');
+  if (el) el.textContent = `${done}/${total} 人已投票`;
+  const bar = document.getElementById('voteProgressBar');
+  if (bar) bar.style.width = (done/total*100) + '%';
+  const hint = document.getElementById('revealHint');
+  if (hint) hint.textContent = done < total ? `还有 ${total-done} 人未投票` : '所有人已投票！';
+}
+
+function hostRevealVotes() {
+  G.phase = 'result';
+  hostBroadcast();
+  renderPhase();
+}
+
+// ======================================================================
+// RESULT
+// ======================================================================
+function renderResult() {
+  // Tally votes
+  const counts = {};
+  G.players.forEach(p => { counts[p.id] = 0; });
+  Object.values(G.votes).forEach(tid => { if (counts[tid]!==undefined) counts[tid]++; });
+  const maxV = Math.max(0, ...Object.values(counts));
+  const topIds = G.players.filter(p => counts[p.id] === maxV && maxV > 0).map(p=>p.id);
+
+  // Win condition
+  const topIsThiefSide = topIds.some(id => { const p=pById(id); return p && (p.role==='thief'||p.isAccomplice); });
+  const banner = document.getElementById('winBanner');
+  banner.style.display = 'block';
+  if (topIsThiefSide) {
+    banner.className = 'win-banner mice-win';
+    banner.innerHTML = `<span class="win-emoji">🐭</span><div class="win-title">嗜睡老鼠胜利！</div><p style="margin-top:8px;color:#aaa;font-size:0.9rem;">大盗/共犯被找出了！</p>`;
+  } else {
+    banner.className = 'win-banner thieves-win';
+    banner.innerHTML = `<span class="win-emoji">🦊</span><div class="win-title">奶酪大盗获胜！</div><p style="margin-top:8px;color:#aaa;font-size:0.9rem;">大盗成功逃脱！</p>`;
+  }
+
+  // Render vote arrows with stagger
+  const rp = document.getElementById('resultPlayers');
+  rp.innerHTML = '';
+  G.players.forEach((p, i) => {
+    const voteTarget = G.votes[p.id] ? (pById(G.votes[p.id])?.name || '?') : '未投';
+    const myVotesReceived = Object.entries(G.votes).filter(([,v])=>v===p.id).map(([k])=>pById(k)?.name||'?');
+    const isTop = topIds.includes(p.id);
+    const div = document.createElement('div');
+    div.className = 'result-player' + (isTop?' most-voted':'') + (p.role==='thief'?' thief':'') + (p.isAccomplice?' accomplice':'');
+    div.style.animationDelay = (i*0.15)+'s';
+    div.innerHTML = `
+      <span style="font-size:1.5rem;">${getEmoji(i)}</span>
+      <div style="flex:1;">
+        <div style="font-weight:600;">${p.name}${isTop?' ⬅️ 得票最多':''}</div>
+        <div style="font-size:0.78rem;color:var(--night-muted);">
+          投给: ${voteTarget} · 被投: ${counts[p.id]}票
+          ${myVotesReceived.length ? ' ← ' + myVotesReceived.join('、') : ''}
+        </div>
+      </div>`;
+    setTimeout(() => { div.classList.add('revealed'); rp.appendChild(div); }, i*150+100);
+  });
+
+  // Identity reveal
+  const rr = document.getElementById('resultRoles');
+  rr.innerHTML = '';
+  setTimeout(() => {
+    G.players.forEach((p, i) => {
+      const div = document.createElement('div');
+      const bg = p.role==='thief'?'rgba(224,80,80,0.1)':p.isAccomplice?'rgba(249,115,22,0.1)':'transparent';
+      const tagCls = p.role==='thief'?'tag-thief':p.isAccomplice?'tag-accomplice':'tag-mouse';
+      const roleLabel = p.role==='thief'?'奶酪大盗':p.isAccomplice?'共犯':'嗜睡老鼠';
+      const roleEmoji = p.role==='thief'?'🦊':'🐭';
+      div.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;border:1px solid var(--night-border);background:${bg};`;
+      div.innerHTML = `<span style="font-size:1.5rem;">${roleEmoji}</span>
+        <div style="flex:1;font-weight:600;">${p.name}</div>
+        <div style="font-size:0.78rem;color:var(--night-muted);">骰子: ${p.dice}</div>
+        <span class="result-role-tag ${tagCls}">${roleLabel}</span>`;
+      rr.appendChild(div);
+    });
+  }, G.players.length * 150 + 400);
+
+  if (isHost) document.getElementById('resultHostControls').style.display = 'flex';
+}
+
+function hostNewRound() {
+  clearInterval(dayTimerInterval);
+  G.phase = 'waiting';
+  G.players.forEach(p => { p.role=''; p.dice=0; p.isAccomplice=false; p.hasVoted=false; p.isConnected=true; });
+  G.votes = {}; G.cheeseStolen = false; G.nightLog = []; G.currentNightNumber = 0;
+  myRole = ''; myDice = 0; myIsAccomplice = false;
+  document.body.classList.remove('day-mode');
+  hostBroadcast();
+  renderPhase();
+}
+
+// ======================================================================
+// RENDER
+// ======================================================================
+function renderPhase() {
+  const ph = G.phase;
+  if (ph === 'waiting') { showPage('lobby'); renderLobby(); }
+  else if (ph === 'dealing') { showPage('dealing'); renderDealing(); }
+  else if (ph === 'night') { if (isHost) { showPage('night-console'); renderNightConsole(); } }
+  else if (ph === 'day') { showPage('day'); renderDay(); }
+  else if (ph === 'voting') { showPage('voting'); renderVoting(); }
+  else if (ph === 'result') { showPage('result'); renderResult(); }
+}
+
+function renderLobby() {
+  const list = document.getElementById('lobbyPlayerList');
+  list.innerHTML = '';
+  G.players.forEach((p,i) => {
+    const d = document.createElement('div');
+    d.className = 'player-item'; d.dataset.id = p.id;
+    d.innerHTML = `<div class="player-avatar">${getEmoji(i)}</div>
+      <div class="player-name">${p.name}${p.id===myId?' (你)':''}</div>
+      ${i===0?'<span class="player-badge host">房主</span>':''}
+      ${!p.isConnected?'<span class="player-badge" style="color:#f87171;background:rgba(248,113,113,0.2);">断线</span>':''}`;
+    list.appendChild(d);
+  });
+  const alive = G.players.filter(p=>p.isConnected).length;
+  document.getElementById('playerCountBadge').textContent = alive + '/8人';
+  if (isHost) updateStartBtn();
+}
+
+function updateStartBtn() {
+  const alive = G.players.filter(p=>p.isConnected).length;
+  const btn = document.getElementById('startBtn');
+  const hint = document.getElementById('startHint');
+  if (btn) btn.disabled = alive < 3;
+  if (hint) hint.textContent = alive < 3 ? `还需 ${3-alive} 名玩家` : `${alive} 名玩家就绪`;
+}
+
+function renderDealing() {
+  updateIdentityCard();
+  if (myDice > 0) {
+    document.getElementById('myDiceValue').style.display = 'block';
+    document.getElementById('diceValueText').textContent = myDice;
+    document.getElementById('myDice').dataset.value = myDice;
+  }
+  if (isHost) {
+    document.getElementById('dealingHostControls').style.display = 'flex';
+    document.getElementById('dealingGuestWaiting').style.display = 'none';
+    updateDiceStatus();
+  } else {
+    document.getElementById('dealingHostControls').style.display = 'none';
+    document.getElementById('dealingGuestWaiting').style.display = 'block';
+  }
+}
+
+function updateDiceStatus() {
+  const list = document.getElementById('diceStatusList');
+  if (!list) return;
+  list.innerHTML = '';
+  G.players.forEach((p,i) => {
+    const d = document.createElement('div');
+    d.className = 'player-item';
+    d.innerHTML = `<div class="player-avatar">${getEmoji(i)}</div>
+      <div class="player-name">${p.name}</div>
+      <span class="player-badge ${p.dice>0?'ready':''}">${p.dice>0?'✅ 已摇':'⏳ 等待'}</span>`;
+    list.appendChild(d);
+  });
+  const allDone = G.players.every(p=>p.dice>0);
+  const btn = document.getElementById('startNightBtn');
+  if (btn) btn.disabled = !allDone;
+  const hint = document.getElementById('diceHintAll');
+  if (hint) hint.textContent = allDone ? '✅ 所有人已摇骰子！' : `还有 ${G.players.filter(p=>p.dice===0).length} 人未摇骰子…`;
+}
+
+function renderNightConsole() {
+  const prog = document.getElementById('nightProgress');
+  if (prog) {
+    prog.innerHTML = '';
+    for (let i=1;i<=6;i++) {
+      const d = document.createElement('div');
+      d.className = 'night-step'; d.id = 'ns-'+i; d.textContent = i;
+      const w = G.players.filter(p=>p.dice===i);
+      if (w.length) d.title = w.map(p=>p.name).join(', ');
+      prog.appendChild(d);
+    }
+  }
+  updateNightProgress(G.currentNightNumber);
+  document.getElementById('skipNightBtn').classList.remove('hidden');
+}
+
+function updateNightProgress(cur) {
+  for (let i=1;i<=6;i++) {
+    const el = document.getElementById('ns-'+i);
+    if (!el) continue;
+    el.classList.remove('active','done');
+    if (i < cur) el.classList.add('done');
+    else if (i === cur) el.classList.add('active');
+  }
+  if (cur > 0) {
+    const n = document.getElementById('consoleCurrentNum');
+    if (n) n.textContent = cur;
+  }
+}
+
+function updateConsoleInfo(num, waking) {
+  const el = document.getElementById('consoleWakingPlayers');
+  if (el) el.textContent = waking.length ? '醒来: ' + waking.map(p=>p.name).join('、') : '无人醒来';
+}
+
+function renderDay() {
+  document.getElementById('dayRoleEmoji').textContent = myRole==='thief'?'🦊':'🐭';
+  document.getElementById('dayRoleName').textContent = myRole==='thief'?'奶酪大盗':myIsAccomplice?'嗜睡老鼠（共犯）':'嗜睡老鼠';
+  const desc = myRole==='thief'?'设法让别人替你背锅！':myIsAccomplice?'帮助大盗躲避追查！':'找出偷走奶酪的大盗！';
+  document.getElementById('dayRoleDesc').textContent = desc;
+  document.getElementById('dayMyDice').textContent = myDice || '?';
+
+  const list = document.getElementById('dayPlayerList');
+  list.innerHTML = '';
+  G.players.forEach((p,i) => {
+    const d = document.createElement('div');
+    d.className = 'player-item';
+    d.innerHTML = `<div class="player-avatar">${getEmoji(i)}</div>
+      <div class="player-name">${p.name}${p.id===myId?' (你)':''}</div>`;
+    list.appendChild(d);
+  });
+
+  if (isHost) {
+    document.getElementById('dayHostControls').style.display = 'block';
+    document.getElementById('hostDayBtns').style.display = 'flex';
+    updateDayCountdown();
+  }
+}
+
+function renderVoting() {
+  const me = myPlayer();
+  const voted = me && me.hasVoted;
+  const opts = document.getElementById('voteOptions');
+  opts.innerHTML = '';
+
+  G.players.forEach((p,i) => {
+    const d = document.createElement('div');
+    d.className = 'vote-option' + (p.id===myId?' self':'');
+    d.innerHTML = `<div class="vote-option-avatar">${getEmoji(i)}</div>
+      <div class="vote-option-name">${p.name}</div>
+      ${p.id===myId?'<div class="vote-count-badge">自己</div>':''}`;
+    if (p.id !== myId && !voted) d.onclick = () => castVote(p.id);
+    opts.appendChild(d);
+  });
+
+  if (voted) {
+    document.getElementById('myVoteCard').style.display = 'none';
+    document.getElementById('voteSubmitted').style.display = 'flex';
+  } else {
+    document.getElementById('myVoteCard').style.display = 'block';
+    document.getElementById('voteSubmitted').style.display = 'none';
+  }
+
+  if (isHost) document.getElementById('votingHostReveal').style.display = 'block';
+  updateVoteProgress();
+}
+
+// ======================================================================
+// IDENTITY CARD
+// ======================================================================
+function updateIdentityCard() {
+  const back = document.getElementById('cardBack');
+  const emoji = document.getElementById('cardRoleEmoji');
+  const name = document.getElementById('cardRoleName');
+  const hint = document.getElementById('cardHint');
+  if (!myRole) return;
+  if (myRole === 'thief') {
+    back.className = 'card-back';
+    emoji.textContent = '🦊'; name.textContent = '奶酪大盗'; hint.textContent = '今晚，偷走那块奶酪！';
+  } else {
+    back.className = 'card-back mouse';
+    emoji.textContent = '🐭';
+    name.textContent = myIsAccomplice ? '嗜睡老鼠（共犯）' : '嗜睡老鼠';
+    hint.textContent = myIsAccomplice ? '你是共犯，帮助大盗！' : '找出偷走奶酪的大盗！';
+  }
+}
+
+function flipIdentityCard() {
+  if (!myRole) { showToast('等待发牌…', 'warning'); return; }
+  if (identityFlipped) return;
+  identityFlipped = true;
+  document.getElementById('identityCard').classList.add('flipped');
+  vibrate([50]);
+  clearTimeout(identityFlipTimer);
+  identityFlipTimer = setTimeout(() => {
+    document.getElementById('identityCard').classList.remove('flipped');
+    identityFlipped = false;
+  }, 5000);
+}
+
+// ======================================================================
+// DICE
+// ======================================================================
+function rollDice() {
+  if (myDice > 0) { showToast('已摇过，点数: ' + myDice, 'info'); return; }
+  const diceEl = document.getElementById('myDice');
+  diceEl.classList.add('rolling');
+  vibrate([100,50,100]);
+  let count = 0;
+  const anim = setInterval(() => {
+    diceEl.dataset.value = Math.ceil(Math.random()*6);
+    if (++count >= 10) {
+      clearInterval(anim);
+      const val = Math.ceil(Math.random()*6);
+      myDice = val;
+      diceEl.dataset.value = val;
+      diceEl.classList.remove('rolling');
+      document.getElementById('myDiceValue').style.display = 'block';
+      document.getElementById('diceValueText').textContent = val;
+      document.getElementById('diceHint').textContent = '点数已确定，不可更改';
+      showToast('你的骰子点数是 ' + val + '！', 'success');
+      vibrate([100,30,200]);
+      const me = myPlayer(); if (me) me.dice = val;
+      if (isHost) { updateDiceStatus(); hostBroadcast(); }
+      else hostConn.send({type:'dice_roll', value:val});
+    }
+  }, 70);
+}
+
+// ======================================================================
+// QR / COPY
+// ======================================================================
+function buildQR() {
+  const c = document.getElementById('qrContainer');
+  c.innerHTML = '';
+  const base = location.href.replace('game.html','index.html').split('?')[0];
+  const url = base + '?room=' + roomCode;
+  try { new QRCode(c, {text:url, width:180, height:180, correctLevel:QRCode.CorrectLevel.M}); }
+  catch(e) { c.innerHTML = `<p style="color:#888;font-size:0.8rem;">${url}</p>`; }
+}
+
+function toggleQR() { document.getElementById('qrContainer').classList.toggle('hidden'); }
+
+function copyRoomCode() {
+  const base = location.href.replace('game.html','index.html').split('?')[0];
+  const url = base + '?room=' + roomCode;
+  const text = `奶酪大盗邀请！\n房间码: ${roomCode}\n加入: ${url}`;
+  if (navigator.share) navigator.share({title:'奶酪大盗', text}).catch(()=>{});
+  else if (navigator.clipboard) navigator.clipboard.writeText(text).then(()=>showToast('已复制！','success'));
+  else showToast('房间码: ' + roomCode, 'info');
+}
+
+// ======================================================================
+// MISC
+// ======================================================================
+function hostSkipToDay() {
+  if (!confirm('确定跳过剩余夜晚？')) return;
+  nightRunning = false;
+  if (nightCurrentInterval) { clearInterval(nightCurrentInterval); nightCurrentInterval = null; }
+  if (nightAccompliceResolve) { nightAccompliceResolve(); nightAccompliceResolve = null; }
+  transitionToDay();
+}
+
+function leaveGame() {
+  if (confirm('确定要离开？')) {
+    clearInterval(dayTimerInterval);
+    if (peer) peer.destroy();
+    localStorage.removeItem('isHost');
+    localStorage.removeItem('roomCode');
+    location.href = 'index.html';
+  }
+}
+
+// ======================================================================
+// BOOT
+// ======================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  // Handle direct URL join
+  const params = new URLSearchParams(location.search);
+  const urlRoom = params.get('room');
+  if (urlRoom && !isHost) {
+    roomCode = urlRoom.toUpperCase();
+    localStorage.setItem('roomCode', roomCode);
+  }
+
+  if (!myName || myName === '玩家') {
+    // Still ok, player name might be set
+  }
+
+  // Show correct initial UI
+  document.getElementById('lobbyRoomCode').textContent = roomCode || '------';
+
+  if (isHost) {
+    document.getElementById('hostControls').style.display = 'flex';
+    document.getElementById('guestWaiting').style.display = 'none';
+    if (!roomCode) { roomCode = uid6(); localStorage.setItem('roomCode', roomCode); }
+    initPeer(hostPeerId(roomCode));
+  } else {
+    if (!roomCode) { showToast('没有房间码，请返回', 'error'); setTimeout(()=>location.href='index.html',2000); return; }
+    document.getElementById('hostControls').style.display = 'none';
+    document.getElementById('guestWaiting').style.display = 'block';
+    document.getElementById('lobbyRoomCode').textContent = roomCode;
+    initPeer(null);
+  }
 });
 </script>
 </body>

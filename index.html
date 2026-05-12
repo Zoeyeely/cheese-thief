@@ -4,260 +4,274 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <title>🧀 奶酪大盗</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    .connecting-hint {
+    .logo-area {
+      padding: 40px 0 20px;
       text-align: center;
-      font-size: 0.85rem;
-      color: #aaa;
-      padding: 4px 0;
     }
-    .spinner {
-      display: inline-block;
-      width: 18px; height: 18px;
-      border: 3px solid rgba(139,69,19,0.2);
-      border-top-color: var(--brown);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
+    .logo-emoji {
+      font-size: 5rem;
+      display: block;
+      animation: cheeseBounce 2s ease-in-out infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes cheeseBounce {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50% { transform: translateY(-12px) rotate(5deg); }
+    }
+    .logo-title {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--night-accent);
+      letter-spacing: -1px;
+      margin-top: 8px;
+    }
+    .logo-tagline {
+      font-size: 0.9rem;
+      color: var(--night-muted);
+      margin-top: 4px;
+    }
+    .tab-bar {
+      display: flex;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--night-border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      background: var(--night-surface);
+      border: none;
+      color: var(--night-muted);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font);
+    }
+    .tab-btn.active {
+      background: var(--night-accent);
+      color: var(--btn-primary-text);
+    }
+    .tab-panel {
+      display: none;
+    }
+    .tab-panel.active {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .rule-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .rule-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .rule-emoji {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      width: 36px;
+      text-align: center;
+    }
+    .rule-content h3 {
+      font-size: 0.95rem;
+      margin-bottom: 2px;
+    }
+    .rule-content p {
+      font-size: 0.82rem;
+      color: var(--night-muted);
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="page">
-
-    <!-- Hero -->
-    <div class="hero fade-in">
-      <div class="emoji-title">🧀🐭</div>
-      <h1>奶酪大盗</h1>
-      <p class="hero-sub">3-8人社交推理游戏</p>
+  <div class="container">
+    <div class="logo-area">
+      <span class="logo-emoji">🧀</span>
+      <div class="logo-title">奶酪大盗</div>
+      <div class="logo-tagline">谁偷走了奶酪？找出那个大盗！</div>
     </div>
 
-    <!-- Tabs: 创建 / 加入 -->
-    <div class="card fade-in" id="mainCard">
-      <div class="section-tabs">
-        <button class="tab-btn active" id="tabCreate" onclick="switchTab('create')">🏠 创建房间</button>
-        <button class="tab-btn" id="tabJoin" onclick="switchTab('join')">🚪 加入房间</button>
-      </div>
-
-      <!-- Create panel -->
-      <div class="tab-panel active" id="panelCreate">
-        <div class="input-group">
-          <label for="createNickname">你的昵称</label>
-          <input type="text" id="createNickname" maxlength="16" placeholder="起个好听的名字" autocomplete="off">
-        </div>
-        <button class="btn btn-primary" id="btnCreate" onclick="createRoom()">
-          🎲 创建新房间
-        </button>
-        <p class="connecting-hint" id="createHint"></p>
-      </div>
-
-      <!-- Join panel -->
-      <div class="tab-panel" id="panelJoin">
-        <div class="input-group">
-          <label for="joinRoomId">房间号</label>
-          <input type="text" id="joinRoomId" maxlength="6" placeholder="输入6位房间号"
-            autocomplete="off" autocapitalize="characters"
-            style="letter-spacing:6px;font-family:monospace;font-size:1.3rem;text-align:center">
-        </div>
-        <div class="input-group">
-          <label for="joinNickname">你的昵称</label>
-          <input type="text" id="joinNickname" maxlength="16" placeholder="起个好听的名字" autocomplete="off">
-        </div>
-        <button class="btn btn-brown" id="btnJoin" onclick="joinRoom()">
-          🚪 进入房间
-        </button>
-        <p class="connecting-hint" id="joinHint"></p>
-      </div>
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('play')">🎮 开始游戏</button>
+      <button class="tab-btn" onclick="switchTab('rules')">📖 规则说明</button>
     </div>
 
-    <!-- After room created: show QR + enter button -->
-    <div class="created-panel" id="createdPanel">
+    <!-- Play Tab -->
+    <div id="tab-play" class="tab-panel active">
       <div class="card">
-        <div class="card-title">🎉 房间创建成功！</div>
-        <div class="qr-section">
-          <div class="room-id-display" id="displayRoomId">------</div>
-          <div id="qrcode"></div>
-          <p class="qr-hint">截图分享房间号，或扫码直接加入</p>
+        <div class="input-group">
+          <label>你的昵称</label>
+          <input type="text" id="playerName" placeholder="输入昵称（2-8字）" maxlength="8" autocomplete="off">
         </div>
-        <div class="mt-16">
-          <button class="btn btn-primary" onclick="enterRoom()">
-            ▶️ 进入房间等待室
-          </button>
+      </div>
+
+      <button class="btn btn-primary" onclick="goCreate()">
+        🏠 创建房间（我是房主）
+      </button>
+
+      <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="input-group">
+          <label>加入房间</label>
+          <input type="text" id="roomCode" placeholder="输入6位房间码" maxlength="6" autocomplete="off"
+                 style="text-transform:uppercase;letter-spacing:3px;text-align:center;font-size:1.3rem;font-weight:700;">
+        </div>
+        <button class="btn btn-outline" onclick="goJoin()">
+          🚀 加入房间
+        </button>
+      </div>
+
+      <p class="text-center font-sm text-muted" style="padding:8px 0;">
+        支持 3-8 人游玩 · 推荐在同一场所使用
+      </p>
+    </div>
+
+    <!-- Rules Tab -->
+    <div id="tab-rules" class="tab-panel">
+      <div class="card">
+        <h3 style="margin-bottom:12px;">🎭 角色说明</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="padding:10px;background:rgba(224,80,80,0.1);border-radius:8px;border:1px solid rgba(224,80,80,0.3);">
+            <span style="color:#f87171;font-weight:700;">🦊 奶酪大盗</span>
+            <p style="font-size:0.82rem;color:#888;margin-top:4px;">每局1名，偷走奶酪的主谋。目标：不被投票出局。</p>
+          </div>
+          <div style="padding:10px;background:rgba(80,128,192,0.1);border-radius:8px;border:1px solid rgba(80,128,192,0.3);">
+            <span style="color:#93c5fd;font-weight:700;">🐭 嗜睡老鼠</span>
+            <p style="font-size:0.82rem;color:#888;margin-top:4px;">其余玩家，负责找出大盗。夜晚可能获得线索。</p>
+          </div>
+          <div style="padding:10px;background:rgba(249,115,22,0.1);border-radius:8px;border:1px solid rgba(249,115,22,0.3);">
+            <span style="color:#fdba74;font-weight:700;">🤝 共犯</span>
+            <p style="font-size:0.82rem;color:#888;margin-top:4px;">5-8人局出现，协助大盗躲避追查。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:12px;">🎯 游戏流程</h3>
+        <div class="rule-section">
+          <div class="rule-item">
+            <span class="rule-emoji">🎲</span>
+            <div class="rule-content">
+              <h3>准备：摇骰子</h3>
+              <p>每人查看身份后摇骰子，点数只有自己可见。</p>
+            </div>
+          </div>
+          <div class="rule-item">
+            <span class="rule-emoji">🌙</span>
+            <div class="rule-content">
+              <h3>夜晚：按点数依次醒来</h3>
+              <p>系统1→6依次唤醒对应点数的玩家。大盗偷奶酪，老鼠可查看其他玩家点数（独醒时）或互认（同时醒时）。</p>
+            </div>
+          </div>
+          <div class="rule-item">
+            <span class="rule-emoji">🤝</span>
+            <div class="rule-content">
+              <h3>共犯机制（5-8人）</h3>
+              <p>5人：同点醒来者；6人：大盗指定1人；7人：大盗指定2人（单向知道）；8人：大盗指定2人（三人互知）。</p>
+            </div>
+          </div>
+          <div class="rule-item">
+            <span class="rule-emoji">☀️</span>
+            <div class="rule-content">
+              <h3>白天：讨论</h3>
+              <p>所有人公开讨论，分享线索，推理大盗身份（5分钟）。</p>
+            </div>
+          </div>
+          <div class="rule-item">
+            <span class="rule-emoji">🗳️</span>
+            <div class="rule-content">
+              <h3>投票：找出大盗</h3>
+              <p>每人投票怀疑对象，得票最多者出局翻牌。</p>
+            </div>
+          </div>
+          <div class="rule-item">
+            <span class="rule-emoji">🏆</span>
+            <div class="rule-content">
+              <h3>结算</h3>
+              <p>出局者是大盗/共犯→老鼠获胜；出局者是老鼠→大盗获胜。</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-
-    <!-- Rules card -->
-    <div class="card fade-in">
-      <div class="card-title">📜 游戏规则</div>
-      <ul class="rules-list">
-        <li><span class="rule-num">1</span><span>3-8人参与，其中1人是<strong>奶酪大盗</strong>，其余是<strong>贪睡鼠</strong></span></li>
-        <li><span class="rule-num">2</span><span>每人查看自己的身份牌（仅自己可见）</span></li>
-        <li><span class="rule-num">3</span><span>天黑后贪睡鼠闭眼，大盗趁机偷走奶酪指示物</span></li>
-        <li><span class="rule-num">4</span><span>天亮后所有人讨论，推理谁是大盗</span></li>
-        <li><span class="rule-num">5</span><span>投票将嫌疑人出局；大盗被投出则贡献方获胜，否则大盗胜！</span></li>
-      </ul>
-    </div>
-
   </div>
-</div>
 
-<div id="toast"></div>
+  <div class="toast-container" id="toastContainer"></div>
 
-<!-- QRCode.js CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- PeerJS CDN -->
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-
-<script>
-// ── Utilities ────────────────────────────────────────────────────────────────
-let toastTimer = null;
-function showToast(msg, type = '') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show' + (type ? ' toast-' + type : '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = ''; }, 3000);
-}
-
-function setHint(elId, msg) {
-  const el = document.getElementById(elId);
-  if (el) el.innerHTML = msg;
-}
-
-function generateRoomId() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let id = '';
-  for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return id;
-}
-
-// ── Tab switching ────────────────────────────────────────────────────────────
-function switchTab(tab) {
-  document.getElementById('tabCreate').classList.toggle('active', tab === 'create');
-  document.getElementById('tabJoin').classList.toggle('active', tab === 'join');
-  document.getElementById('panelCreate').classList.toggle('active', tab === 'create');
-  document.getElementById('panelJoin').classList.toggle('active', tab === 'join');
-}
-
-// ── State ────────────────────────────────────────────────────────────────────
-let createdRoomId = null;
-let createdNickname = null;
-let qrInstance = null;
-let peer = null;
-
-// ── Create Room ──────────────────────────────────────────────────────────────
-function createRoom() {
-  const nickname = document.getElementById('createNickname').value.trim();
-  if (!nickname) { showToast('请先输入昵称', 'error'); return; }
-
-  const btn = document.getElementById('btnCreate');
-  btn.disabled = true;
-  setHint('createHint', '<span class="spinner"></span>正在初始化连接...');
-
-  const roomId = generateRoomId();
-
-  // Create PeerJS peer with roomId as the peer ID
-  if (peer) { try { peer.destroy(); } catch(e) {} }
-
-  peer = new Peer(roomId, {
-    debug: 0
-  });
-
-  peer.on('open', (id) => {
-    createdRoomId = id;
-    createdNickname = nickname;
-
-    // Save to sessionStorage
-    sessionStorage.setItem('roomId', createdRoomId);
-    sessionStorage.setItem('nickname', createdNickname);
-    sessionStorage.setItem('isHost', 'true');
-
-    // Show created panel
-    document.getElementById('mainCard').style.display = 'none';
-    document.getElementById('createdPanel').classList.add('active');
-    document.getElementById('displayRoomId').textContent = createdRoomId;
-
-    // Generate QR code
-    const joinUrl = `${location.origin}${location.pathname}?room=${createdRoomId}`;
-    if (qrInstance) {
-      qrInstance.clear();
-      qrInstance.makeCode(joinUrl);
-    } else {
-      qrInstance = new QRCode(document.getElementById('qrcode'), {
-        text: joinUrl,
-        width: 160,
-        height: 160,
-        correctLevel: QRCode.CorrectLevel.M
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach((b, i) => {
+        b.classList.toggle('active', (i === 0) === (tab === 'play'));
       });
+      document.getElementById('tab-play').classList.toggle('active', tab === 'play');
+      document.getElementById('tab-rules').classList.toggle('active', tab === 'rules');
     }
 
-    setHint('createHint', '');
-    btn.disabled = false;
-    showToast(`房间 ${createdRoomId} 创建成功！`, 'success');
-
-    // Destroy peer after getting ID — game.html will create it fresh
-    peer.destroy();
-    peer = null;
-  });
-
-  peer.on('error', (err) => {
-    console.error('Peer error:', err);
-    btn.disabled = false;
-    setHint('createHint', '');
-    if (err.type === 'unavailable-id') {
-      // Try again with new ID
-      showToast('房间号冲突，重新生成...', '');
-      setTimeout(createRoom, 500);
-    } else {
-      showToast('连接失败: ' + (err.message || err.type), 'error');
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3200);
     }
-  });
-}
 
-// ── Join Room ─────────────────────────────────────────────────────────────────
-function joinRoom() {
-  const roomId = document.getElementById('joinRoomId').value.trim().toUpperCase();
-  const nickname = document.getElementById('joinNickname').value.trim();
-  if (!roomId) { showToast('请输入房间号', 'error'); return; }
-  if (!nickname) { showToast('请先输入昵称', 'error'); return; }
-  if (roomId.length !== 6) { showToast('房间号为6位', 'error'); return; }
-
-  sessionStorage.setItem('roomId', roomId);
-  sessionStorage.setItem('nickname', nickname);
-  sessionStorage.setItem('isHost', 'false');
-
-  window.location.href = `game.html?room=${roomId}`;
-}
-
-// ── Enter room after creating ─────────────────────────────────────────────────
-function enterRoom() {
-  window.location.href = `game.html?room=${createdRoomId}`;
-}
-
-// ── Pre-fill from URL ─────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-  const params = new URLSearchParams(location.search);
-  const roomParam = params.get('room');
-  if (roomParam) {
-    switchTab('join');
-    document.getElementById('joinRoomId').value = roomParam.toUpperCase();
-    document.getElementById('joinNickname').focus();
-  }
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const active = document.querySelector('.tab-btn.active');
-      if (active?.id === 'tabCreate') createRoom();
-      else joinRoom();
+    function validateName() {
+      const name = document.getElementById('playerName').value.trim();
+      if (!name || name.length < 1) {
+        showToast('请先输入昵称', 'warning');
+        document.getElementById('playerName').focus();
+        return null;
+      }
+      return name;
     }
-  });
-});
-</script>
+
+    function goCreate() {
+      const name = validateName();
+      if (!name) return;
+      localStorage.setItem('playerName', name);
+      localStorage.setItem('isHost', 'true');
+      localStorage.removeItem('roomCode');
+      window.location.href = 'game.html';
+    }
+
+    function goJoin() {
+      const name = validateName();
+      if (!name) return;
+      const code = document.getElementById('roomCode').value.trim().toUpperCase();
+      if (code.length !== 6) {
+        showToast('请输入6位房间码', 'warning');
+        return;
+      }
+      localStorage.setItem('playerName', name);
+      localStorage.setItem('isHost', 'false');
+      localStorage.setItem('roomCode', code);
+      window.location.href = 'game.html';
+    }
+
+    // Restore name
+    const saved = localStorage.getItem('playerName');
+    if (saved) document.getElementById('playerName').value = saved;
+
+    // Enter key support
+    document.getElementById('roomCode').addEventListener('keydown', e => {
+      if (e.key === 'Enter') goJoin();
+    });
+    document.getElementById('playerName').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('roomCode').focus();
+    });
+
+    // Auto-uppercase room code
+    document.getElementById('roomCode').addEventListener('input', function() {
+      this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+  </script>
 </body>
 </html>
